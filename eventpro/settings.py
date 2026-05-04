@@ -178,19 +178,21 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
-# Use CompressedStaticFilesStorage (no manifest) to avoid collectstatic
-# crashing on missing referenced files. Switch to CompressedManifestStaticFilesStorage
-# once all static file references are confirmed correct.
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+
+# Use default static files storage — Django's serve view handles delivery
+# WhiteNoise middleware stays for gzip compression of responses
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
-# Legacy key for any older Django/WhiteNoise compatibility
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # ---------------------------------------------------------------------------
 # Media files — Cloudinary in production, local disk in development
@@ -292,7 +294,7 @@ CSRF_COOKIE_SECURE    = _is_https
 
 CSRF_TRUSTED_ORIGINS = [
     o.strip() for o in
-    env('CSRF_TRUSTED_ORIGINS', 'http://localhost:8001,http://127.0.0.1:8001').split(',')
+    env('CSRF_TRUSTED_ORIGINS', 'https://wristbandsng.onrender.com').split(',')
     if o.strip()
 ]
 
@@ -329,7 +331,7 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 500
 # ---------------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS = [
     o.strip() for o in
-    env('CORS_ORIGINS', 'http://localhost:8000').split(',')
+    env('CORS_ORIGINS', 'https://wristbandsng.onrender.com').split(',')
     if o.strip()
 ]
 CORS_ALLOW_CREDENTIALS = True
