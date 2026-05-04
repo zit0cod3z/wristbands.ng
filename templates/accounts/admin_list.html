@@ -1,0 +1,112 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Manage Admins{% endblock %}
+{% block page_title %}Admin User Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+  <p class="text-muted mb-0">{{ profiles|length }} admin user{{ profiles|length|pluralize }}</p>
+  <a href="{% url 'accounts:admin_create' %}" class="btn btn-ep-primary">
+    <i class="bi bi-person-plus me-2"></i>Create New Admin
+  </a>
+</div>
+
+<div class="dash-card">
+  <div class="dash-card-body p-0">
+    <div class="table-responsive">
+      <table class="table dash-table mb-0">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Role</th>
+            <th>Assigned Events</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for profile in profiles %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" class="admin-avatar-sm" alt="{{ profile.user.username }}"/>
+                {% else %}
+                <div class="admin-avatar-sm">{{ profile.user.first_name|first|upper }}{{ profile.user.last_name|first|upper }}</div>
+                {% endif %}
+                <div>
+                  <div class="fw-600 text-white">{{ profile.user.get_full_name|default:profile.user.username }}</div>
+                  <div class="text-muted small">@{{ profile.user.username }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if profile.role == 'superadmin' %}
+              <span class="role-badge role-super">
+                <i class="bi bi-star-fill me-1"></i>Super Admin
+              </span>
+              {% elif profile.role == 'admin' %}
+              <span class="role-badge role-admin">
+                <i class="bi bi-shield-check me-1"></i>Admin
+              </span>
+              {% else %}
+              <span class="role-badge role-mod">
+                <i class="bi bi-eye me-1"></i>Moderator
+              </span>
+              {% endif %}
+            </td>
+            <td>
+              {% if profile.role == 'superadmin' or profile.user.is_superuser or profile.user.is_staff %}
+              <span class="text-white fw-600">All Events</span>
+              <span class="text-muted small">(full access)</span>
+              {% else %}
+              {% with count=profile.assigned_events.count %}
+              <span class="text-white fw-600">{{ count }}</span>
+              <span class="text-muted small">event{{ count|pluralize }}</span>
+              {% endwith %}
+              {% endif %}
+            </td>
+            <td><span class="text-muted small">{{ profile.created_at|date:"M d, Y" }}</span></td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="{% url 'accounts:admin_edit' profile.pk %}" class="btn btn-xs btn-ep-ghost" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                {% if profile.user != request.user %}
+                <a href="{% url 'accounts:admin_delete' profile.pk %}" class="btn btn-xs btn-danger-soft" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center py-5">
+              <i class="bi bi-people display-4 text-muted d-block mb-3"></i>
+              <p class="text-muted">No admin users yet.</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+.admin-avatar-sm {
+  width:36px; height:36px; border-radius:10px;
+  background:linear-gradient(135deg,#ac2376,#e6573f);
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:700; color:#fff; flex-shrink:0;
+  object-fit:cover;
+}
+.role-badge {
+  display:inline-flex; align-items:center; padding:4px 12px;
+  border-radius:50px; font-size:11px; font-weight:700;
+}
+.role-super { background:rgba(172,35,118,.2); color:#ac2376; border:1px solid rgba(172,35,118,.3); }
+.role-admin { background:rgba(59,130,246,.15); color:#3b82f6; border:1px solid rgba(59,130,246,.25); }
+.role-mod   { background:rgba(122,104,114,.15); color:#9a8a94; border:1px solid rgba(122,104,114,.25); }
+</style>
+{% endblock %}

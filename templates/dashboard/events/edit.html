@@ -1,0 +1,180 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Edit – {{ event.title }}{% endblock %}
+{% block page_title %}Edit Event{% endblock %}
+{% block nav_events %}active{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-9">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="row g-4">
+        <div class="col-12">
+          <div class="dash-card">
+            <div class="dash-card-header"><h6 class="dash-card-title"><i class="bi bi-info-circle me-2 text-purple"></i>Basic Information</h6></div>
+            <div class="dash-card-body">
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <label class="form-label dash-label">Event Title</label>
+                  <input type="text" name="title" value="{{ event.title }}" class="form-control ep-input-dark" required />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label dash-label">Event Type</label>
+                  <select name="event_type" class="form-select ep-input-dark">
+                    {% for val, label in event_types %}
+                    <option value="{{ val }}" {% if event.event_type == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-12">
+                  <label class="form-label dash-label">Description</label>
+                  <textarea name="description" class="form-control ep-input-dark" rows="4">{{ event.description }}</textarea>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label dash-label">Banner Image</label>
+                  {% if event.banner %}<img src="{{ event.banner.url }}" class="d-block mb-2 rounded" style="height:60px" />{% endif %}
+                  <input type="file" name="banner" class="form-control ep-input-dark" accept="image/*" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label dash-label">Theme Color</label>
+                  <input type="color" name="color_theme" value="{{ event.color_theme }}" class="form-control form-control-color ep-color-input" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label dash-label">Status</label>
+                  <select name="status" class="form-select ep-input-dark">
+                    {% for val, label in event.STATUS_CHOICES %}
+                    <option value="{{ val }}" {% if event.status == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="dash-card">
+            <div class="dash-card-header"><h6 class="dash-card-title"><i class="bi bi-geo-alt me-2 text-blue"></i>Location & Schedule</h6></div>
+            <div class="dash-card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label dash-label">Venue</label>
+                  <input type="text" name="venue" value="{{ event.venue }}" class="form-control ep-input-dark" required />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label dash-label">Address</label>
+                  <input type="text" name="address" value="{{ event.address }}" class="form-control ep-input-dark" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label dash-label">City</label>
+                  <input type="text" name="city" value="{{ event.city }}" class="form-control ep-input-dark" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label dash-label">Country</label>
+                  <input type="text" name="country" value="{{ event.country }}" class="form-control ep-input-dark" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label dash-label">Start Date & Time</label>
+                  <input type="datetime-local" name="start_date" value="{{ event.start_date|date:'Y-m-d' }}T{{ event.start_date|date:'H:i' }}" class="form-control ep-input-dark" required />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label dash-label">End Date & Time</label>
+                  <input type="datetime-local" name="end_date" value="{{ event.end_date|date:'Y-m-d' }}T{{ event.end_date|date:'H:i' }}" class="form-control ep-input-dark" required />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label dash-label">Registration Deadline</label>
+                  <input type="datetime-local" name="registration_deadline" value="{% if event.registration_deadline %}{{ event.registration_deadline|date:'Y-m-d' }}T{{ event.registration_deadline|date:'H:i' }}{% endif %}" class="form-control ep-input-dark" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="dash-card">
+            <div class="dash-card-body">
+              <div class="row g-3 align-items-center">
+                <div class="col-md-4">
+                  <label class="form-label dash-label">Capacity (0 = unlimited)</label>
+                  <input type="number" name="capacity" value="{{ event.capacity }}" min="0" class="form-control ep-input-dark" />
+                </div>
+                <div class="col-md-4 pt-4">
+                  <div class="form-check ep-form-check-dark">
+                    <input class="form-check-input" type="checkbox" name="is_featured" id="isFeatured" {% if event.is_featured %}checked{% endif %} />
+                    <label class="form-check-label text-muted" for="isFeatured">Feature on homepage</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 d-flex gap-3 justify-content-between flex-wrap">
+          <a href="{% url 'dashboard:event_form_builder' event.pk %}" class="btn btn-ep-ghost">
+            <i class="bi bi-ui-checks me-2"></i>Form Builder
+          </a>
+          <div class="d-flex gap-3 flex-wrap">
+            <!-- Registration toggle -->
+            <button type="button" id="regToggleBtn"
+                    data-url="{% url 'dashboard:toggle_registration' event.pk %}"
+                    class="btn btn-sm {% if event.registration_open %}btn-reg-open{% else %}btn-reg-closed{% endif %}">
+              <i class="bi {% if event.registration_open %}bi-person-check{% else %}bi-person-x{% endif %} me-1"></i>
+              Registration: {% if event.registration_open %}Open{% else %}Closed{% endif %}
+            </button>
+            <!-- Check-in toggle -->
+            <button type="button" id="ciToggleBtn"
+                    data-url="{% url 'dashboard:toggle_checkin' event.pk %}"
+                    class="btn btn-sm {% if event.checkin_open %}btn-ci-open{% else %}btn-ci-closed{% endif %}">
+              <i class="bi {% if event.checkin_open %}bi-qr-code-scan{% else %}bi-qr-code{% endif %} me-1"></i>
+              Check-in: {% if event.checkin_open %}Open{% else %}Closed{% endif %}
+            </button>
+            <a href="{% url 'dashboard:event_list' %}" class="btn btn-ep-ghost px-4">Cancel</a>
+            <button type="submit" class="btn btn-ep-primary px-5">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const style = document.createElement('style');
+style.textContent = `
+  .btn-reg-open  { background:rgba(16,185,129,.15); color:#4ade80; border:1px solid rgba(16,185,129,.3); }
+  .btn-reg-closed{ background:rgba(239,68,68,.15);  color:#f87171; border:1px solid rgba(239,68,68,.3); }
+  .btn-ci-open   { background:rgba(59,130,246,.15); color:#60a5fa; border:1px solid rgba(59,130,246,.3); }
+  .btn-ci-closed { background:rgba(245,158,11,.15); color:#fbbf24; border:1px solid rgba(245,158,11,.3); }
+`;
+document.head.appendChild(style);
+
+function getCookie(n) { let v=document.cookie.match('(^|;) ?'+n+'=([^;]*)(;|$)'); return v?v[2]:null; }
+
+document.getElementById('regToggleBtn').addEventListener('click', function() {
+  fetch(this.dataset.url, {method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}})
+    .then(r => r.json()).then(data => {
+      if (data.registration_open) {
+        this.className = this.className.replace('btn-reg-closed','btn-reg-open');
+        this.innerHTML = '<i class="bi bi-person-check me-1"></i>Registration: Open';
+      } else {
+        this.className = this.className.replace('btn-reg-open','btn-reg-closed');
+        this.innerHTML = '<i class="bi bi-person-x me-1"></i>Registration: Closed';
+      }
+    });
+});
+
+document.getElementById('ciToggleBtn').addEventListener('click', function() {
+  fetch(this.dataset.url, {method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}})
+    .then(r => r.json()).then(data => {
+      if (data.checkin_open) {
+        this.className = this.className.replace('btn-ci-closed','btn-ci-open');
+        this.innerHTML = '<i class="bi bi-qr-code-scan me-1"></i>Check-in: Open';
+      } else {
+        this.className = this.className.replace('btn-ci-open','btn-ci-closed');
+        this.innerHTML = '<i class="bi bi-qr-code me-1"></i>Check-in: Closed';
+      }
+    });
+});
+</script>
+{% endblock %}

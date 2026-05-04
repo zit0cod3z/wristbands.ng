@@ -1,0 +1,73 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Manual Registration – {{ event.title }}{% endblock %}
+{% block page_title %}Manual Registration{% endblock %}
+{% block nav_regs %}active{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="dash-card mb-3" style="border-left:3px solid #f59e0b">
+      <div class="dash-card-body py-3">
+        <p class="text-muted small mb-0"><i class="bi bi-info-circle me-2 text-warning"></i>
+        Manually registering for <strong class="text-white">{{ event.title }}</strong>. A QR code will be generated and a confirmation email sent automatically.</p>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h6 class="dash-card-title"><i class="bi bi-person-plus me-2 text-purple"></i>Registrant Details</h6>
+      </div>
+      <div class="dash-card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label dash-label">Full Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control ep-input-dark" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label dash-label">Email Address <span class="text-danger">*</span></label>
+            <input type="email" name="email" class="form-control ep-input-dark" required />
+          </div>
+
+          {% for field in fields %}
+          <div class="mb-3">
+            <label class="form-label dash-label">{{ field.label }}{% if field.is_required %} <span class="text-danger">*</span>{% endif %}</label>
+            {% if field.field_type == 'textarea' %}
+            <textarea name="{{ field.field_key }}" class="form-control ep-input-dark" rows="3" {% if field.is_required %}required{% endif %}></textarea>
+            {% elif field.field_type == 'select' %}
+            <select name="{{ field.field_key }}" class="form-select ep-input-dark" {% if field.is_required %}required{% endif %}>
+              <option value="">-- Select --</option>
+              {% for opt in field.get_options_list %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}
+            </select>
+            {% elif field.field_type == 'radio' %}
+            {% for opt in field.get_options_list %}
+            <div class="form-check ep-form-check-dark">
+              <input class="form-check-input" type="radio" name="{{ field.field_key }}" value="{{ opt }}" id="{{ field.field_key }}_{{ forloop.counter }}" />
+              <label class="form-check-label text-muted" for="{{ field.field_key }}_{{ forloop.counter }}">{{ opt }}</label>
+            </div>
+            {% endfor %}
+            {% elif field.field_type == 'checkbox' %}
+            {% for opt in field.get_options_list %}
+            <div class="form-check ep-form-check-dark">
+              <input class="form-check-input" type="checkbox" name="{{ field.field_key }}" value="{{ opt }}" id="{{ field.field_key }}_{{ forloop.counter }}" />
+              <label class="form-check-label text-muted" for="{{ field.field_key }}_{{ forloop.counter }}">{{ opt }}</label>
+            </div>
+            {% endfor %}
+            {% else %}
+            <input type="{{ field.field_type }}" name="{{ field.field_key }}" class="form-control ep-input-dark" placeholder="{{ field.placeholder }}" {% if field.is_required %}required{% endif %} />
+            {% endif %}
+          </div>
+          {% endfor %}
+
+          <div class="d-flex gap-3 justify-content-end mt-4">
+            <a href="{% url 'dashboard:event_registrations' event.pk %}" class="btn btn-ep-ghost px-4">Cancel</a>
+            <button type="submit" class="btn btn-ep-primary px-5">
+              <i class="bi bi-person-check me-2"></i>Register & Send QR
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

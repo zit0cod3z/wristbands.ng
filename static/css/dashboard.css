@@ -1,0 +1,653 @@
+/* ============================================
+   WristbandsNG – Dashboard CSS
+   Colour palette: wristbands.ng
+   Primary:  #ac2376  (magenta/pink)
+   Accent:   #e6573f  (orange-red)
+   Dark:     #545454  (charcoal)
+   ============================================ */
+
+:root {
+  --dash-bg:       #0d0d12;
+  --dash-sidebar:  #110e10;
+  --dash-card:     #181418;
+  --dash-border:   rgba(172,35,118,0.14);
+  --dash-text:     #e8e0e5;
+  --dash-muted:    #7a6872;
+  --dash-primary:  #ac2376;
+  --dash-primary-dk: #8e1c61;
+  --dash-accent:   #e6573f;
+  --dash-green:    #10b981;
+  --dash-blue:     #3b82f6;
+  --dash-orange:   #f59e0b;
+  --dash-red:      #ef4444;
+  --sidebar-width: 260px;
+  --topbar-height: 64px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body.dash-body {
+  font-family: 'Inter', sans-serif;
+  background: var(--dash-bg);
+  color: var(--dash-text);
+  overflow-x: hidden;
+}
+
+/* ---- Sidebar ---- */
+.dash-sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0;
+  width: var(--sidebar-width);
+  background: var(--dash-sidebar);
+  border-right: 1px solid var(--dash-border);
+  display: flex; flex-direction: column;
+  z-index: 1000; overflow-y: auto;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--dash-border);
+  flex-shrink: 0;
+}
+.brand-icon-sm {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--dash-primary), var(--dash-accent));
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #fff;
+}
+.brand-text-sm  { font-size: 18px; font-weight: 800; color: #fff; }
+.brand-accent   { color: var(--dash-accent); }
+.sidebar-close  { background: none; border: none; color: var(--dash-muted); font-size: 18px; margin-left: auto; cursor: pointer; }
+
+.sidebar-user {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--dash-border);
+}
+.user-avatar-lg {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--dash-primary), var(--dash-accent));
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.user-name { font-size: 13px; font-weight: 600; color: #fff; }
+.user-role { font-size: 11px; color: var(--dash-muted); }
+
+.sidebar-nav { padding: 16px 12px; flex: 1; }
+.nav-section-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1.5px; color: var(--dash-muted);
+  padding: 0 8px; margin-bottom: 6px;
+}
+.sidebar-link {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px;
+  color: var(--dash-muted); text-decoration: none;
+  font-size: 13px; font-weight: 500;
+  transition: all 0.2s; margin-bottom: 2px;
+}
+.sidebar-link i { font-size: 16px; width: 20px; text-align: center; }
+.sidebar-link.active { background: rgba(172,35,118,0.18); color: var(--dash-primary); font-weight: 600; }
+.sidebar-link.active i { color: var(--dash-primary); }
+.text-danger-soft { color: #ff6b6b !important; }
+
+/* ---- Main Layout ---- */
+.dash-main { margin-left: var(--sidebar-width); min-height: 100vh; display: flex; flex-direction: column; }
+
+.dash-topbar {
+  height: var(--topbar-height);
+  background: var(--dash-sidebar);
+  border-bottom: 1px solid var(--dash-border);
+  display: flex; align-items: center;
+  padding: 0 24px; gap: 16px;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-toggle { background: none; border: none; color: var(--dash-muted); font-size: 22px; cursor: pointer; }
+.topbar-title  { font-size: 16px; font-weight: 700; color: #fff; }
+.topbar-avatar {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--dash-primary), var(--dash-accent));
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+}
+
+.dash-content { padding: 24px; flex: 1; }
+
+/* ---- Cards ---- */
+.dash-card {
+  background: var(--dash-card);
+  border: 1px solid var(--dash-border);
+  border-radius: 14px; overflow: hidden;
+}
+.dash-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--dash-border);
+}
+.dash-card-title { font-size: 14px; font-weight: 700; color: #fff; margin: 0; }
+.dash-card-body  { padding: 20px; }
+
+/* ---- Stat Cards ---- */
+.stat-card {
+  border-radius: 14px; padding: 20px;
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 16px;
+  border: 1px solid var(--dash-border);
+}
+.stat-primary { background: linear-gradient(135deg, rgba(172,35,118,0.22), rgba(172,35,118,0.05)); }
+.stat-accent  { background: linear-gradient(135deg, rgba(230,87,63,0.22),  rgba(230,87,63,0.05)); }
+.stat-green   { background: linear-gradient(135deg, rgba(16,185,129,0.2),  rgba(16,185,129,0.05)); }
+.stat-orange  { background: linear-gradient(135deg, rgba(245,158,11,0.2),  rgba(245,158,11,0.05)); }
+
+/* keep old names working too */
+.stat-purple { background: linear-gradient(135deg, rgba(172,35,118,0.22), rgba(172,35,118,0.05)); }
+.stat-blue   { background: linear-gradient(135deg, rgba(59,130,246,0.2),  rgba(59,130,246,0.05)); }
+
+.stat-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.stat-primary .stat-icon,
+.stat-purple  .stat-icon { background: rgba(172,35,118,0.2); color: var(--dash-primary); }
+.stat-accent  .stat-icon { background: rgba(230,87,63,0.2);  color: var(--dash-accent); }
+.stat-green   .stat-icon { background: rgba(16,185,129,0.2); color: var(--dash-green); }
+.stat-orange  .stat-icon { background: rgba(245,158,11,0.2); color: var(--dash-orange); }
+.stat-blue    .stat-icon { background: rgba(59,130,246,0.2); color: var(--dash-blue); }
+
+.stat-value { font-size: 28px; font-weight: 800; color: #fff; line-height: 1; }
+.stat-label { font-size: 12px; color: var(--dash-muted); margin-top: 4px; }
+.stat-bg-icon { position: absolute; right: -10px; bottom: -10px; font-size: 80px; opacity: 0.05; pointer-events: none; }
+
+/* ---- Tables ---- */
+.dash-table { color: var(--dash-text); }
+.dash-table thead th {
+  background: rgba(172,35,118,0.06);
+  border-bottom: 1px solid var(--dash-border);
+  color: var(--dash-muted); font-size: 11px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+  padding: 12px 16px;
+}
+.dash-table tbody td {
+  border-bottom: 1px solid rgba(172,35,118,0.07);
+  padding: 14px 16px; vertical-align: middle;
+}
+.dash-table tbody tr:last-child td { border-bottom: none; }
+
+/* ---- Badges & Chips ---- */
+.status-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 50px;
+  font-size: 11px; font-weight: 700;
+}
+.status-published { background: rgba(16,185,129,0.15);  color: #10b981; }
+.status-draft     { background: rgba(122,104,114,0.15); color: #9a8090; }
+.status-closed    { background: rgba(239,68,68,0.15);   color: #ef4444; }
+.status-cancelled { background: rgba(239,68,68,0.15);   color: #ef4444; }
+.status-confirmed { background: rgba(16,185,129,0.15);  color: #10b981; }
+.status-pending   { background: rgba(230,87,63,0.15);   color: var(--dash-accent); }
+.status-attended  { background: rgba(172,35,118,0.15);  color: var(--dash-primary); }
+
+.type-chip {
+  display: inline-flex; align-items: center;
+  background: rgba(172,35,118,0.12); color: var(--dash-primary);
+  border: 1px solid rgba(172,35,118,0.22);
+  padding: 3px 10px; border-radius: 50px;
+  font-size: 11px; font-weight: 600;
+}
+
+.field-type-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(230,87,63,0.1); color: var(--dash-accent);
+  border: 1px solid rgba(230,87,63,0.2);
+  padding: 3px 10px; border-radius: 50px;
+  font-size: 11px; font-weight: 600;
+}
+
+.reg-count-badge {
+  background: linear-gradient(135deg, var(--dash-primary), var(--dash-accent));
+  color: #fff; font-size: 14px; font-weight: 800;
+  padding: 2px 12px; border-radius: 50px;
+}
+
+/* ---- Buttons ---- */
+.btn-ep-primary {
+  background: linear-gradient(135deg, var(--dash-primary), var(--dash-accent));
+  color: #fff; border: none; border-radius: 8px;
+  font-weight: 600; font-size: 13px; padding: 8px 18px;
+  transition: all 0.2s; display: inline-flex; align-items: center;
+}
+
+.btn-ep-ghost {
+  background: rgba(172,35,118,0.07);
+  color: var(--dash-text); border: 1px solid var(--dash-border);
+  border-radius: 8px; font-weight: 500; font-size: 13px; padding: 8px 18px;
+  transition: all 0.2s; display: inline-flex; align-items: center;
+}
+
+.btn-xs { padding: 4px 8px !important; font-size: 12px !important; border-radius: 6px !important; }
+.btn-danger-soft { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+
+/* ---- Form Inputs ---- */
+.ep-input-dark {
+  background: rgba(172,35,118,0.06) !important;
+  border: 1px solid rgba(172,35,118,0.2) !important;
+  color: #fff !important; border-radius: 8px !important;
+  padding: 10px 14px !important; font-size: 13px !important;
+  transition: all 0.2s !important;
+}
+.ep-input-dark:focus {
+  background: rgba(172,35,118,0.1) !important;
+  border-color: var(--dash-primary) !important;
+  box-shadow: 0 0 0 3px rgba(172,35,118,0.18) !important;
+  outline: none !important;
+}
+.ep-input-dark::placeholder { color: rgba(255,255,255,0.22) !important; }
+.ep-input-dark option { background: #1e1418; color: #fff; }
+
+.ep-input-group .input-group-text.ep-input-addon {
+  background: rgba(172,35,118,0.08);
+  border: 1px solid rgba(172,35,118,0.2);
+  color: var(--dash-muted);
+}
+
+.ep-color-input { width: 48px !important; height: 40px !important; padding: 4px !important; border-radius: 8px !important; cursor: pointer; }
+
+.dash-label {
+  font-size: 12px; font-weight: 600; color: var(--dash-muted);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+}
+
+.ep-form-check-dark .form-check-input {
+  background-color: rgba(172,35,118,0.08);
+  border-color: rgba(172,35,118,0.3);
+}
+.ep-form-check-dark .form-check-input:checked { background-color: var(--dash-primary); border-color: var(--dash-primary); }
+.ep-form-check-dark .form-check-label { color: var(--dash-muted); font-size: 13px; }
+
+/* ---- Alerts ---- */
+.dash-alert {
+  border-radius: 10px; border: none; font-size: 13px; padding: 12px 16px;
+}
+.dash-alert-success { background: rgba(16,185,129,0.15);  color: #10b981; }
+.dash-alert-error   { background: rgba(239,68,68,0.15);   color: #ef4444; }
+.dash-alert-warning { background: rgba(230,87,63,0.15);   color: var(--dash-accent); }
+.dash-alert-info    { background: rgba(172,35,118,0.15);  color: var(--dash-primary); }
+
+/* ---- Misc ---- */
+.event-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.font-mono  { font-family: 'Courier New', monospace; }
+.text-purple { color: var(--dash-primary) !important; }
+.text-green  { color: var(--dash-green) !important; }
+.text-blue   { color: var(--dash-blue) !important; }
+.text-orange { color: var(--dash-orange) !important; }
+
+.qr-thumb { width: 40px; height: 40px; border-radius: 6px; background: #fff; padding: 2px; }
+
+.reg-detail-grid { display: flex; flex-direction: column; }
+.reg-detail-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--dash-border); font-size: 13px;
+}
+.reg-detail-row:last-child { border-bottom: none; }
+.reg-detail-row span:first-child { color: var(--dash-muted); }
+.reg-detail-row span:last-child  { color: #fff; font-weight: 500; text-align: right; max-width: 60%; }
+
+/* ---- Modal ---- */
+.dash-modal {
+  background: #1a1218;
+  border: 1px solid var(--dash-border);
+  border-radius: 16px;
+}
+.dash-modal .modal-header { border-bottom: 1px solid var(--dash-border); padding: 16px 20px; }
+.dash-modal .modal-footer { border-top:  1px solid var(--dash-border); padding: 12px 20px; }
+.dash-modal .modal-body   { padding: 20px; }
+
+/* ---- Delete Icon ---- */
+.delete-icon-wrap {
+  width: 80px; height: 80px;
+  background: rgba(239,68,68,0.1); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; color: #ef4444;
+}
+
+/* ---- Profile ---- */
+.profile-avatar-lg {
+  width: 80px; height: 80px;
+  background: linear-gradient(135deg, var(--dash-primary), var(--dash-accent));
+  border-radius: 20px; display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 800; color: #fff; overflow: hidden;
+}
+
+/* ---- Login Page ---- */
+.login-bg-shapes { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.login-shape { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.14; }
+.login-shape.s1 { width: 500px; height: 500px; background: var(--dash-primary); top: -200px; right: -100px; }
+.login-shape.s2 { width: 400px; height: 400px; background: var(--dash-accent);  bottom: -100px; left: -100px; }
+.login-shape.s3 { width: 300px; height: 300px; background: #c43060;             top: 50%; left: 30%; }
+
+.login-brand-icon {
+  width: 60px; height: 60px;
+  background: linear-gradient(135deg, var(--dash-primary), var(--dash-accent));
+  border-radius: 16px; display: flex; align-items: center; justify-content: center;
+  font-size: 28px; color: #fff;
+}
+
+/* ---- Sidebar Overlay (mobile) ---- */
+.sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 999; display: none; }
+.sidebar-overlay.show { display: block; }
+
+/* ---- Responsive ---- */
+@media (max-width: 991.98px) {
+  .dash-sidebar { transform: translateX(-100%); }
+  .dash-sidebar.open { transform: translateX(0); }
+  .dash-main { margin-left: 0; }
+}
+@media (max-width: 576px) {
+  .dash-content { padding: 16px; }
+  .stat-value { font-size: 22px; }
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(172,35,118,0.35); border-radius: 3px; }
+
+/* ---- Utility ---- */
+.fw-600 { font-weight: 600; }
+.fw-700 { font-weight: 700; }
+.fw-800 { font-weight: 800; }
+.bg-success-soft { background: rgba(16,185,129,0.12) !important; }
+.bg-warning-soft { background: rgba(230,87,63,0.12) !important; }
+.bg-danger-soft  { background: rgba(239,68,68,0.12) !important; }
+
+/* ============================================================
+   GLOBAL TEXT VISIBILITY OVERRIDES
+   Forces all text to be highly visible white on dark backgrounds
+   ============================================================ */
+
+/* Override Bootstrap's text-muted everywhere in the dashboard */
+.text-muted,
+.dash-body .text-muted,
+.dash-content .text-muted {
+  color: rgba(255,255,255,0.55) !important;
+}
+
+/* All paragraph and span text defaults to readable white */
+.dash-content p,
+.dash-content span:not(.badge):not(.status-badge):not(.type-chip):not(.reg-count-badge):not(.field-type-chip) {
+  color: rgba(255,255,255,0.85);
+}
+
+/* Table cells — all text white */
+.dash-table tbody td,
+.dash-table tbody td span,
+.dash-table tbody td div {
+  color: rgba(255,255,255,0.85);
+}
+.dash-table tbody td .text-muted,
+.dash-table tbody td .text-muted small {
+  color: rgba(255,255,255,0.5) !important;
+}
+
+/* ---- Check-in dashboard specific ---- */
+
+/* Event identity meta line */
+.event-identity-meta,
+.event-identity-meta i {
+  color: rgba(255,255,255,0.65) !important;
+}
+
+/* Stat card labels */
+.ci-stat .lbl,
+.ov-stat .lbl {
+  color: rgba(255,255,255,0.6) !important;
+  font-weight: 600;
+}
+
+/* Progress bar label */
+.progress-bar-wrap + * ,
+.dash-card-body .text-muted.small {
+  color: rgba(255,255,255,0.55) !important;
+}
+
+/* Live updates text */
+.live-dot + span {
+  color: rgba(255,255,255,0.65) !important;
+}
+
+/* ---- Checked-in list ---- */
+.ci-email  { color: rgba(255,255,255,0.55) !important; }
+.ci-time   { color: rgba(255,255,255,0.55) !important; }
+.ci-code   { color: #e06aaa !important; font-weight: 600; }
+.ci-name   { color: #fff !important; font-weight: 700; }
+
+/* ---- Not arrived list ---- */
+.na-name  { color: #fff !important; font-weight: 600; }
+.na-email { color: rgba(255,255,255,0.55) !important; }
+
+/* ---- Recent Scan Activity log ---- */
+.log-item {
+  color: rgba(255,255,255,0.85) !important;
+  border-bottom: 1px solid rgba(172,35,118,0.1) !important;
+  padding: 8px 0 !important;
+}
+.log-item span {
+  color: rgba(255,255,255,0.85) !important;
+}
+.log-item span.text-muted {
+  color: rgba(255,255,255,0.5) !important;
+}
+.log-item span.ms-auto {
+  color: rgba(255,255,255,0.45) !important;
+  font-size: 11px;
+}
+.log-ok   { color: #4ade80 !important; }
+.log-fail { color: #f87171 !important; }
+.log-dup  { color: #fbbf24 !important; }
+
+/* Empty state messages */
+.dash-card-body p.text-muted,
+.dash-card-body p.text-center.text-muted {
+  color: rgba(255,255,255,0.45) !important;
+}
+
+/* ---- Overview page ---- */
+.ev-title { color: #fff !important; font-weight: 700; }
+.ev-meta  { color: rgba(255,255,255,0.55) !important; }
+.ev-stat-item .n { color: #fff !important; }
+.ev-stat-item .l { color: rgba(255,255,255,0.5) !important; }
+.ev-stat-item.primary .n { color: #e06aaa !important; }
+.ev-stat-item.accent  .n { color: #f4845f !important; }
+.ev-stat-item.green   .n { color: #4ade80 !important; }
+.ev-pct { color: #e06aaa !important; font-weight: 700; }
+
+/* ---- Event select cards ---- */
+.ci-mini-lbl { color: rgba(255,255,255,0.55) !important; }
+.ci-mini-val { color: #fff !important; }
+
+/* ---- Check-in progress label ---- */
+.d-flex.justify-content-between.mb-1 span.text-muted {
+  color: rgba(255,255,255,0.6) !important;
+}
+
+/* ---- Scan activity section header ---- */
+.dash-card-header h6.dash-card-title {
+  color: #fff !important;
+}
+
+/* ---- Modal text ---- */
+.dash-modal .modal-body span,
+.dash-modal .modal-body div,
+.dash-modal .modal-body p {
+  color: rgba(255,255,255,0.85);
+}
+.dash-modal .modal-body .text-muted {
+  color: rgba(255,255,255,0.5) !important;
+}
+
+/* ---- Registration detail rows ---- */
+.reg-detail-row span:first-child { color: rgba(255,255,255,0.55) !important; }
+.reg-detail-row span:last-child  { color: #fff !important; }
+
+/* ---- Form labels in dark inputs ---- */
+.dash-label { color: rgba(255,255,255,0.6) !important; }
+.ep-form-check-dark .form-check-label { color: rgba(255,255,255,0.8) !important; }
+
+/* ---- Share modal steps ---- */
+.step-text { color: rgba(255,255,255,0.75) !important; }
+.share-url-text { color: #fff !important; }
+.share-url-label { color: rgba(255,255,255,0.5) !important; }
+
+/* ---- Import/manual checkin pages ---- */
+.format-col-title { color: #fff !important; }
+.format-col-accepted { color: rgba(255,255,255,0.55) !important; }
+.import-drop-title { color: #fff !important; }
+.import-drop-sub   { color: rgba(255,255,255,0.55) !important; }
+
+/* ---- Admin list page ---- */
+.role-option-title { color: #fff !important; }
+.role-option-desc  { color: rgba(255,255,255,0.55) !important; }
+.event-assign-option .text-white { color: #fff !important; }
+
+/* ---- Sidebar nav section labels ---- */
+.nav-section-label { color: rgba(255,255,255,0.4) !important; }
+
+/* ---- Topbar title ---- */
+.topbar-title { color: #fff !important; }
+
+/* ---- User info in sidebar ---- */
+.user-name { color: #fff !important; }
+.user-role { color: rgba(255,255,255,0.5) !important; }
+
+/* ============================================================
+   TABLE ROW BACKGROUND FIX
+   Bootstrap's .table sets white backgrounds — force dark
+   ============================================================ */
+
+.dash-table,
+.dash-table > :not(caption) > * > *,
+.dash-table tbody,
+.dash-table tbody tr,
+.dash-table tbody td,
+.dash-table thead,
+.dash-table thead tr,
+.dash-table thead th {
+  background-color: transparent !important;
+  color: inherit;
+  border-color: rgba(172,35,118,0.1) !important;
+}
+
+/* Explicit row backgrounds */
+.dash-table tbody tr {
+  background-color: var(--dash-card) !important;
+}
+
+.dash-table tbody tr:nth-child(even) {
+  background-color: rgba(172,35,118,0.04) !important;
+}
+
+/* Cell text colours */
+.dash-table tbody td {
+  color: rgba(255,255,255,0.85) !important;
+  border-bottom: 1px solid rgba(172,35,118,0.08) !important;
+}
+
+.dash-table thead th {
+  background-color: rgba(172,35,118,0.08) !important;
+  color: rgba(255,255,255,0.55) !important;
+  border-bottom: 1px solid rgba(172,35,118,0.15) !important;
+}
+
+/* Status badge text inside tables */
+.dash-table .status-published { background: rgba(16,185,129,0.15);  color: #4ade80 !important; }
+.dash-table .status-draft     { background: rgba(122,104,114,0.15); color: rgba(255,255,255,0.5) !important; }
+.dash-table .status-closed,
+.dash-table .status-cancelled { background: rgba(239,68,68,0.15);   color: #f87171 !important; }
+
+/* fw-600 text in tables */
+.dash-table .fw-600,
+.dash-table .fw-700,
+.dash-table .text-white {
+  color: #fff !important;
+}
+
+/* Muted secondary text in tables */
+.dash-table .text-muted,
+.dash-table small {
+  color: rgba(255,255,255,0.5) !important;
+}
+
+/* Edit/action buttons in tables */
+.dash-table .btn-xs {
+  background: rgba(172,35,118,0.1) !important;
+  border: 1px solid rgba(172,35,118,0.2) !important;
+  color: rgba(255,255,255,0.8) !important;
+}
+
+/* Last row no border */
+.dash-table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* Bootstrap table-responsive wrapper */
+.table-responsive {
+  background: transparent !important;
+}
+
+/* Bootstrap .table default overrides */
+.table {
+  --bs-table-bg: transparent !important;
+  --bs-table-striped-bg: transparent !important;
+  --bs-table-hover-bg: transparent !important;
+  --bs-table-border-color: rgba(172,35,118,0.1) !important;
+  --bs-table-color: rgba(255,255,255,0.85) !important;
+  color: rgba(255,255,255,0.85) !important;
+}
+
+/* ============================================================
+   BOOTSTRAP TABLE CSS VARIABLE NUCLEAR OVERRIDE
+   Bootstrap 5 uses CSS custom properties on each cell —
+   these must be overridden at the variable level
+   ============================================================ */
+
+/* Override Bootstrap's table CSS variables at root */
+:root {
+  --bs-table-bg:            transparent;
+  --bs-table-striped-bg:    transparent;
+  --bs-table-hover-bg:      transparent;
+  --bs-table-active-bg:     transparent;
+  --bs-table-border-color:  rgba(172,35,118,0.1);
+  --bs-table-color:         rgba(255,255,255,0.85);
+  --bs-table-striped-color: rgba(255,255,255,0.85);
+  --bs-table-hover-color:   rgba(255,255,255,0.85);
+  --bs-table-active-color:  rgba(255,255,255,0.85);
+}
+
+/* Force every table cell to be transparent */
+.dash-table > :not(caption) > * {
+  background-color: transparent !important;
+}
+.dash-table > :not(caption) > * > * {
+  background-color: transparent !important;
+  color: rgba(255,255,255,0.85) !important;
+  border-bottom-color: rgba(172,35,118,0.1) !important;
+  box-shadow: none !important;
+}
+
+/* thead cells */
+.dash-table thead > tr > th {
+  background-color: rgba(172,35,118,0.07) !important;
+  color: rgba(255,255,255,0.5) !important;
+  border-bottom: 1px solid rgba(172,35,118,0.15) !important;
+}
+
+/* tbody rows alternate */
+.dash-table tbody > tr:nth-child(even) > td {
+  background-color: rgba(172,35,118,0.03) !important;
+}
+
+/* table-responsive wrapper */
+.table-responsive {
+  background-color: transparent !important;
+}

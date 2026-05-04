@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account Locked – WristbandsNG</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+</head>
+<body class="dash-body d-flex align-items-center justify-content-center min-vh-100">
+  <div class="text-center p-5">
+    <div class="delete-icon-wrap mx-auto mb-4" style="background:rgba(245,158,11,0.1)">
+      <i class="bi bi-shield-lock-fill" style="color:#f59e0b;font-size:36px"></i>
+    </div>
+    <h3 class="text-white fw-700">Account Temporarily Locked</h3>
+    <p class="text-muted mt-2">Too many failed login attempts. Please wait 1 hour before trying again.</p>
+    <a href="{% url 'accounts:login' %}" class="btn btn-ep-primary mt-3">Try Again</a>
+  </div>
+</body>
+</html>

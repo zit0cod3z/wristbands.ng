@@ -1,0 +1,14 @@
+Django==5.2
+daphne==4.1.2
+channels==4.1.0
+Pillow==11.1.0
+qrcode==8.0
+django-crispy-forms==2.3
+crispy-bootstrap5==2024.10
+openpyxl==3.1.5
+gunicorn==23.0.0
+django-cors-headers==4.6.0
+whitenoise==6.8.2
+django-axes==7.0.1
+cloudinary
+django-cloudinary-storage

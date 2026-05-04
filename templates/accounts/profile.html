@@ -1,0 +1,63 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h6 class="dash-card-title"><i class="bi bi-person-circle me-2 text-purple"></i>Account Settings</h6>
+      </div>
+      <div class="dash-card-body">
+        <div class="text-center mb-4">
+          <div class="profile-avatar-lg mx-auto mb-3">
+            {% if user.admin_profile and user.admin_profile.avatar %}
+            <img src="{{ user.admin_profile.avatar.url }}" alt="Avatar" class="rounded-circle w-100 h-100 object-fit-cover" />
+            {% else %}
+            {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+            {% endif %}
+          </div>
+          <h5 class="text-white fw-700">{{ user.get_full_name|default:user.username }}</h5>
+          <span class="type-chip">
+            {% if user.is_superuser %}Super Admin{% elif user.is_staff %}Admin{% else %}Moderator{% endif %}
+          </span>
+        </div>
+
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label dash-label">First Name</label>
+              <input type="text" name="first_name" value="{{ user.first_name }}" class="form-control ep-input-dark" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label dash-label">Last Name</label>
+              <input type="text" name="last_name" value="{{ user.last_name }}" class="form-control ep-input-dark" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label dash-label">Email</label>
+              <input type="email" name="email" value="{{ user.email }}" class="form-control ep-input-dark" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label dash-label">Phone</label>
+              <input type="tel" name="phone" value="{% if user.admin_profile %}{{ user.admin_profile.phone }}{% endif %}" class="form-control ep-input-dark" />
+            </div>
+            <div class="col-12">
+              <label class="form-label dash-label">Bio</label>
+              <textarea name="bio" class="form-control ep-input-dark" rows="3">{% if user.admin_profile %}{{ user.admin_profile.bio }}{% endif %}</textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label dash-label">Profile Photo</label>
+              <input type="file" name="avatar" class="form-control ep-input-dark" accept="image/*" />
+            </div>
+          </div>
+          <div class="d-flex justify-content-end mt-4">
+            <button type="submit" class="btn btn-ep-primary px-5">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

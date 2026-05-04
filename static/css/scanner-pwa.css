@@ -1,0 +1,228 @@
+/* WristbandsNG PWA Scanner – Offline-capable */
+:root { --p:#ac2376; --a:#e6573f; --bg:#0d0d12; --card:#181418; --border:rgba(172,35,118,.18); --text:#e8e0e5; --muted:#7a6872; }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+
+/* ── Layout ── */
+.pwa-app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+
+/* ── Header ── */
+.pwa-header{
+  background:linear-gradient(135deg,var(--p),var(--a));
+  padding:12px 16px;display:flex;align-items:center;gap:10px;
+  flex-shrink:0;position:relative;z-index:10;
+}
+.pwa-header .back{color:rgba(255,255,255,.85);font-size:22px;text-decoration:none;line-height:1}
+.pwa-header .titles{flex:1;min-width:0}
+.pwa-header .scanning-label{font-size:10px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.8px}
+.pwa-header .event-name{font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pwa-header .header-actions{display:flex;gap:8px;align-items:center}
+.pwa-header .icon-btn{background:rgba(255,255,255,.15);border:none;color:#fff;width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer}
+
+/* ── Status bar ── */
+.status-bar{
+  display:flex;align-items:center;gap:8px;padding:6px 16px;
+  background:var(--card);border-bottom:1px solid var(--border);
+  font-size:11px;flex-shrink:0;
+}
+.status-indicator{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.status-indicator.online{background:#10b981;animation:pulse-green 2s infinite}
+.status-indicator.offline{background:#ef4444}
+.status-indicator.syncing{background:#f59e0b;animation:pulse-yellow 1s infinite}
+@keyframes pulse-green{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.4)}50%{box-shadow:0 0 0 4px rgba(16,185,129,0)}}
+@keyframes pulse-yellow{0%,100%{opacity:1}50%{opacity:.4}}
+.status-text{color:var(--muted);flex:1}
+.queue-badge{background:rgba(230,87,63,.2);color:var(--a);border-radius:50px;padding:2px 8px;font-weight:700;display:none}
+.queue-badge.show{display:inline}
+
+/* ── Stats strip ── */
+.stats-strip{display:flex;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0}
+.stat-box{flex:1;text-align:center;padding:8px 4px;border-right:1px solid var(--border)}
+.stat-box:last-child{border-right:none}
+.stat-box .val{font-size:20px;font-weight:800;color:#fff;line-height:1}
+.stat-box .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.stat-box.hi .val{color:var(--p)}
+
+/* ── Scrollable body ── */
+.pwa-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+/* ── Camera ── */
+.camera-section{position:relative;background:#000;width:100%;max-width:100%}
+#pwaVideo{width:100%;display:block;max-height:42vh;object-fit:cover}
+#pwaCanvas{display:none}
+.scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scan-frame{width:200px;height:200px;position:relative}
+.scan-frame::before,.scan-frame::after,.scan-frame span::before,.scan-frame span::after{content:'';position:absolute;width:28px;height:28px;border-color:var(--p);border-style:solid}
+.scan-frame::before{top:0;left:0;border-width:3px 0 0 3px}
+.scan-frame::after{top:0;right:0;border-width:3px 3px 0 0}
+.scan-frame span::before{bottom:0;left:0;border-width:0 0 3px 3px}
+.scan-frame span::after{bottom:0;right:0;border-width:0 3px 3px 0}
+.scan-line{position:absolute;left:8px;right:8px;height:2px;background:linear-gradient(90deg,transparent,var(--p),transparent);animation:scanline 2s linear infinite}
+@keyframes scanline{0%{top:8px}100%{top:192px}}
+.cam-hint{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,.5)}
+
+/* ── Camera controls ── */
+.cam-controls{display:flex;gap:6px;padding:8px 12px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0}
+.cam-btn{flex:1;background:rgba(172,35,118,.1);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 4px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px}
+.cam-btn.active{background:rgba(172,35,118,.25);color:var(--p);border-color:var(--p)}
+.cam-btn i{font-size:15px}
+
+/* ── Result toast ── */
+.result-toast{
+  margin:10px 12px;border-radius:14px;padding:14px 16px;
+  display:none;animation:popIn .2s ease;
+}
+@keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.result-toast.success {background:rgba(16,185,129,.15);border:2px solid #10b981}
+.result-toast.duplicate{background:rgba(245,158,11,.15);border:2px solid #f59e0b}
+.result-toast.denied  {background:rgba(239,68,68,.15);border:2px solid #ef4444}
+.result-toast.not_found{background:rgba(239,68,68,.15);border:2px solid #ef4444}
+.result-toast.offline_queued{background:rgba(172,35,118,.15);border:2px solid var(--p)}
+.result-toast.error   {background:rgba(239,68,68,.15);border:2px solid #ef4444}
+.result-toast .r-icon{font-size:28px;margin-bottom:4px}
+.result-toast .r-name{font-size:18px;font-weight:800;color:#fff}
+.result-toast .r-msg {font-size:12px;color:#b09aa8;margin-top:3px}
+.result-toast .r-code{font-family:monospace;font-size:11px;color:var(--muted);margin-top:4px}
+
+/* ── Manual input ── */
+.manual-section{padding:10px 12px;border-bottom:1px solid var(--border)}
+.manual-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.manual-row{display:flex;gap:6px}
+.manual-input{flex:1;background:rgba(172,35,118,.08);border:1px solid var(--border);color:#fff;border-radius:10px;padding:9px 12px;font-size:14px;outline:none}
+.manual-input:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(172,35,118,.2)}
+.manual-btn{background:linear-gradient(135deg,var(--p),var(--a));color:#fff;border:none;border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer;font-size:14px}
+
+/* ── Recent scans ── */
+.recent-section{padding:10px 12px 100px}
+.recent-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.scan-item{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-bottom:5px}
+.scan-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.scan-dot.ok{background:#10b981}.scan-dot.bad{background:#ef4444}.scan-dot.dup{background:#f59e0b}.scan-dot.queued{background:var(--p)}
+.scan-name{font-size:12px;font-weight:600;color:#fff;flex:1}
+.scan-time{font-size:10px;color:var(--muted)}
+.scan-offline-tag{font-size:9px;background:rgba(172,35,118,.2);color:var(--p);border-radius:4px;padding:1px 5px;font-weight:700}
+
+/* ── Bottom nav ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;padding:6px 0 env(safe-area-inset-bottom,6px);z-index:20}
+.bottom-nav a{flex:1;display:flex;flex-direction:column;align-items:center;color:var(--muted);text-decoration:none;font-size:9px;gap:2px;padding:3px 0}
+.bottom-nav a i{font-size:19px}
+.bottom-nav a.active{color:var(--p)}
+
+/* ── Install banner ── */
+.install-banner{display:none;background:linear-gradient(135deg,rgba(172,35,118,.2),rgba(230,87,63,.1));border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin:10px 12px;align-items:center;gap:10px}
+.install-banner.show{display:flex}
+.install-banner p{font-size:12px;color:var(--text);flex:1;margin:0}
+.install-banner p strong{color:#fff}
+.install-btn{background:linear-gradient(135deg,var(--p),var(--a));color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+
+/* ── Offline registrations count ── */
+.offline-cache-info{font-size:10px;color:var(--muted);padding:4px 12px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.offline-cache-info i{color:var(--p)}
+
+/* ============================================================
+   SCANNER TEXT VISIBILITY OVERRIDES
+   ============================================================ */
+
+/* Stats strip labels */
+.stat-box .lbl { color: rgba(255,255,255,0.6) !important; }
+.stat-box .val { color: #fff !important; }
+.stat-box.hi .val { color: var(--p) !important; }
+
+/* Status bar */
+.status-text { color: rgba(255,255,255,0.75) !important; }
+.offline-cache-info { color: rgba(255,255,255,0.55) !important; }
+.offline-cache-info i { color: var(--p) !important; }
+
+/* Result toast — all text white */
+.result-toast .r-name { color: #fff !important; font-size: 20px; font-weight: 800; }
+.result-toast .r-msg  { color: rgba(255,255,255,0.8) !important; font-size: 13px; margin-top: 4px; }
+.result-toast .r-code { color: rgba(255,255,255,0.5) !important; font-size: 11px; font-family: monospace; }
+.result-toast .r-icon { font-size: 32px; margin-bottom: 6px; display: block; }
+
+/* Result toast backgrounds — more visible */
+.result-toast.success   { background: rgba(16,185,129,.25) !important; border: 2px solid #4ade80 !important; }
+.result-toast.duplicate { background: rgba(245,158,11,.25) !important; border: 2px solid #fbbf24 !important; }
+.result-toast.denied,
+.result-toast.not_found,
+.result-toast.error     { background: rgba(239,68,68,.25) !important;  border: 2px solid #f87171 !important; }
+.result-toast.offline_queued { background: rgba(172,35,118,.25) !important; border: 2px solid #e06aaa !important; }
+
+/* Manual section label */
+.manual-label { color: rgba(255,255,255,0.65) !important; font-weight: 700; }
+.manual-input::placeholder { color: rgba(255,255,255,0.4) !important; }
+
+/* Recent scans section */
+.recent-label { color: rgba(255,255,255,0.6) !important; font-weight: 700; }
+.scan-name    { color: #fff !important; font-weight: 600; }
+.scan-time    { color: rgba(255,255,255,0.5) !important; }
+.scan-offline-tag { color: #e06aaa !important; background: rgba(172,35,118,.2) !important; }
+
+/* Bottom nav labels */
+.bottom-nav a { color: rgba(255,255,255,0.45) !important; }
+.bottom-nav a.active { color: var(--p) !important; }
+.bottom-nav a i { color: inherit !important; }
+
+/* Camera hint */
+.cam-hint { color: rgba(255,255,255,0.5) !important; }
+
+/* Camera controls */
+.cam-btn { color: rgba(255,255,255,0.8) !important; }
+.cam-btn.active { color: var(--p) !important; }
+
+/* Queue badge */
+.queue-badge { background: rgba(230,87,63,.25) !important; color: #f4845f !important; font-weight: 700; }
+
+/* Install banner */
+.install-banner p { color: rgba(255,255,255,0.85) !important; }
+.install-banner p strong { color: #fff !important; }
+
+/* PWA header */
+.pwa-header .scanning-label { color: rgba(255,255,255,0.7) !important; }
+.pwa-header .event-name     { color: #fff !important; font-weight: 700; }
+
+/* ── Offline Registration Modal ── */
+.offline-reg-modal {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7);
+  display: none; align-items: flex-end; justify-content: center;
+}
+.offline-reg-modal.open { display: flex; }
+
+.offline-reg-content {
+  background: #1a1418;
+  border: 1px solid rgba(172,35,118,.3);
+  border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 480px;
+  padding: 0;
+  animation: slideUp .25s ease;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.offline-reg-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(172,35,118,.2);
+}
+.offline-reg-header h6 { color: #fff; font-weight: 700; font-size: 16px; margin: 0; }
+.close-btn {
+  background: rgba(255,255,255,.08); border: none; color: #fff;
+  width: 30px; height: 30px; border-radius: 50%;
+  font-size: 18px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; line-height: 1;
+}
+
+.offline-reg-body { padding: 20px; }
+.offline-reg-body .form-label { color: rgba(255,255,255,.85); font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+
+/* Reg queue badge on bottom nav */
+.reg-queue-dot {
+  position: absolute; top: 4px; right: 20%;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #e6573f; display: none;
+}
+.reg-queue-dot.show { display: block; }

@@ -1,0 +1,199 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Import Guest List – {{ event.title }}{% endblock %}
+{% block page_title %}Import Guest List{% endblock %}
+{% block nav_checkin %}active{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-7 col-lg-9">
+
+    <!-- Event identity -->
+    <div class="event-identity-banner mb-4">
+      <div class="event-identity-dot" style="background:{{ event.color_theme }};box-shadow:0 0 10px {{ event.color_theme }}88"></div>
+      <div>
+        <div class="event-identity-title">{{ event.title }}</div>
+        <div class="event-identity-meta">
+          <i class="bi bi-calendar3 me-1"></i>{{ event.start_date|date:"F d, Y" }}
+          &nbsp;·&nbsp;<i class="bi bi-geo-alt me-1"></i>{{ event.venue }}
+        </div>
+      </div>
+      <a href="{% url 'checkin:manual_checkin_list' event.pk %}" class="btn btn-ep-ghost btn-sm ms-auto">
+        <i class="bi bi-person-check me-1"></i>Manual Check-in
+      </a>
+    </div>
+
+    <!-- Upload card -->
+    <div class="dash-card mb-4">
+      <div class="dash-card-header">
+        <h6 class="dash-card-title"><i class="bi bi-file-earmark-excel me-2" style="color:#10b981"></i>Upload Excel Guest List</h6>
+      </div>
+      <div class="dash-card-body">
+        <form method="post" enctype="multipart/form-data" id="importForm">
+          {% csrf_token %}
+
+          <!-- Drop zone -->
+          <div class="import-dropzone" id="dropZone" onclick="document.getElementById('excelFile').click()">
+            <div class="import-drop-icon"><i class="bi bi-file-earmark-excel"></i></div>
+            <div class="import-drop-title">Drop your Excel file here</div>
+            <div class="import-drop-sub">or click to browse — .xlsx or .xls</div>
+            <div class="import-drop-file" id="fileLabel" style="display:none"></div>
+          </div>
+          <input type="file" name="excel_file" id="excelFile" accept=".xlsx,.xls" style="display:none" required/>
+
+          <!-- Options -->
+          <div class="mt-4 p-3" style="background:rgba(172,35,118,.06);border:1px solid rgba(172,35,118,.15);border-radius:10px">
+            <div class="form-check ep-form-check-dark">
+              <input class="form-check-input" type="checkbox" name="mark_checked_in" id="markCheckedIn" value="1"/>
+              <label class="form-check-label text-white fw-600" for="markCheckedIn">
+                Mark all imported guests as already checked in
+              </label>
+              <div class="text-muted small mt-1">Use this if the event manager's list is of people who have already arrived and you just need to record them.</div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-3 justify-content-end mt-4">
+            <a href="{% url 'checkin:dashboard' event.pk %}" class="btn btn-ep-ghost px-4">Cancel</a>
+            <button type="submit" class="btn btn-ep-primary px-5" id="importBtn">
+              <i class="bi bi-upload me-2"></i>Import Guests
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Format guide -->
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h6 class="dash-card-title"><i class="bi bi-info-circle me-2" style="color:#ac2376"></i>Spreadsheet Format Guide</h6>
+      </div>
+      <div class="dash-card-body">
+        <p class="text-muted small mb-3">Your Excel file should have a header row. The importer auto-detects column names — these are all accepted:</p>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="format-col-card">
+              <div class="format-col-icon" style="color:#ac2376"><i class="bi bi-person"></i></div>
+              <div class="format-col-title">Name <span class="text-danger">*</span></div>
+              <div class="format-col-accepted">Name, Full Name, Guest Name, Attendee</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="format-col-card">
+              <div class="format-col-icon" style="color:#e6573f"><i class="bi bi-envelope"></i></div>
+              <div class="format-col-title">Email <span class="text-muted small">(optional)</span></div>
+              <div class="format-col-accepted">Email, Email Address, E-mail, Mail</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="format-col-card">
+              <div class="format-col-icon" style="color:#3b82f6"><i class="bi bi-telephone"></i></div>
+              <div class="format-col-title">Phone <span class="text-muted small">(optional)</span></div>
+              <div class="format-col-accepted">Phone, Phone Number, Mobile, Tel</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Example table -->
+        <p class="text-muted small mb-2">Example spreadsheet layout:</p>
+        <div class="table-responsive">
+          <table class="table dash-table mb-0" style="font-size:13px">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-white">John Adeyemi</td>
+                <td class="text-muted">john@example.com</td>
+                <td class="text-muted">08012345678</td>
+              </tr>
+              <tr>
+                <td class="text-white">Amaka Obi</td>
+                <td class="text-muted">amaka@example.com</td>
+                <td class="text-muted">08098765432</td>
+              </tr>
+              <tr>
+                <td class="text-white">Tunde Bello</td>
+                <td class="text-muted"></td>
+                <td class="text-muted">07011223344</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="text-muted small mt-3 mb-0">
+          <i class="bi bi-lightbulb me-1" style="color:#f59e0b"></i>
+          Guests without an email address will still be imported and get a QR code — they just won't receive a confirmation email.
+          Duplicate emails are automatically skipped.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.event-identity-banner { background:linear-gradient(135deg,rgba(172,35,118,.12),rgba(230,87,63,.06)); border:1px solid rgba(172,35,118,.2); border-radius:14px; padding:16px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.event-identity-dot { width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+.event-identity-title { font-size:17px; font-weight:800; color:#fff; }
+.event-identity-meta { font-size:12px; color:#7a6872; margin-top:2px; }
+
+.import-dropzone {
+  border: 2px dashed rgba(172,35,118,.4); border-radius:14px;
+  padding: 40px 20px; text-align:center; cursor:pointer;
+  background:rgba(172,35,118,.04);
+}
+.import-dropzone.drag-over {
+  border-color:#ac2376; background:rgba(172,35,118,.1);
+}
+.import-drop-icon { font-size:48px; color:#ac2376; margin-bottom:12px; }
+.import-drop-title { font-size:16px; font-weight:700; color:#fff; margin-bottom:4px; }
+.import-drop-sub { font-size:13px; color:#7a6872; }
+.import-drop-file { font-size:13px; color:#10b981; font-weight:600; margin-top:8px; }
+
+.format-col-card { background:rgba(255,255,255,.04); border:1px solid rgba(172,35,118,.12); border-radius:10px; padding:14px; }
+.format-col-icon { font-size:22px; margin-bottom:6px; }
+.format-col-title { font-size:13px; font-weight:700; color:#fff; margin-bottom:4px; }
+.format-col-accepted { font-size:11px; color:#7a6872; line-height:1.6; }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const dropZone  = document.getElementById('dropZone');
+const fileInput = document.getElementById('excelFile');
+const fileLabel = document.getElementById('fileLabel');
+const importBtn = document.getElementById('importBtn');
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) {
+    fileLabel.textContent = '✓ ' + fileInput.files[0].name;
+    fileLabel.style.display = 'block';
+  }
+});
+
+// Drag and drop
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    fileInput.files = dt.files;
+    fileLabel.textContent = '✓ ' + file.name;
+    fileLabel.style.display = 'block';
+  }
+});
+
+document.getElementById('importForm').addEventListener('submit', () => {
+  importBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Importing…';
+  importBtn.disabled = true;
+});
+</script>
+{% endblock %}

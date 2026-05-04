@@ -1,0 +1,26 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Delete Event{% endblock %}
+{% block page_title %}Delete Event{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-5">
+    <div class="dash-card text-center p-5">
+      <div class="mb-4">
+        <div class="delete-icon-wrap mx-auto">
+          <i class="bi bi-trash3-fill"></i>
+        </div>
+      </div>
+      <h4 class="text-white fw-700">Delete Event?</h4>
+      <p class="text-muted">You're about to permanently delete <strong class="text-white">{{ event.title }}</strong>. This will also remove all associated registrations and QR codes. This action cannot be undone.</p>
+      <div class="d-flex gap-3 justify-content-center mt-4">
+        <a href="{% url 'dashboard:event_list' %}" class="btn btn-ep-ghost px-4">Cancel</a>
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger px-4">Yes, Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

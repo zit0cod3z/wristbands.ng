@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="theme-color" content="#ac2376"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>Register – {{ event.title }}</title>
+{% load static %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+<style>
+:root{--p:#ac2376;--a:#e6573f;--bg:#0d0d12;--card:#181418;--border:rgba(172,35,118,.2);--text:#e8e0e5;--muted:rgba(255,255,255,.55)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+.app-header{background:linear-gradient(135deg,var(--p),var(--a));padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.app-header a{color:rgba(255,255,255,.85);font-size:22px;text-decoration:none;line-height:1}
+.app-header .titles{flex:1;min-width:0}
+.app-header .sub{font-size:10px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.8px}
+.app-header .ev-title{font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status-bar{display:flex;align-items:center;gap:8px;padding:7px 14px;background:var(--card);border-bottom:1px solid var(--border);font-size:11px}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot.online{background:#10b981;animation:blink 2s infinite}
+.dot.offline{background:#ef4444}
+.dot.syncing{background:#f59e0b;animation:blink .8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.status-text{color:var(--muted);flex:1}
+.queue-pill{background:rgba(230,87,63,.2);color:#f4845f;border-radius:50px;padding:2px 8px;font-weight:700;display:none}
+.queue-pill.show{display:inline}
+.content{padding:16px;max-width:520px;margin:0 auto;padding-bottom:100px}
+.event-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:20px}
+.event-card .ev-name{font-size:16px;font-weight:800;color:#fff;margin-bottom:4px}
+.event-card .ev-meta{font-size:12px;color:var(--muted)}
+.event-card .ev-meta i{color:var(--p);margin-right:4px}
+.stats-row{display:flex;gap:10px;margin-top:12px}
+.stat-box{flex:1;background:rgba(172,35,118,.08);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+.stat-box .n{font-size:20px;font-weight:800;color:#fff}
+.stat-box .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.stat-box.hi .n{color:var(--p)}
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
+.form-card h6{font-size:14px;font-weight:700;color:#fff;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:rgba(255,255,255,.75);margin-bottom:6px}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:rgba(172,35,118,.07);border:1px solid var(--border);color:#fff;border-radius:10px;padding:11px 14px;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(172,35,118,.18)}
+.form-group input::placeholder,.form-group textarea::placeholder{color:rgba(255,255,255,.3)}
+.form-group select option{background:#1a1418;color:#fff}
+.radio-group,.checkbox-group{display:flex;flex-direction:column;gap:8px}
+.check-item{display:flex;align-items:center;gap:10px;background:rgba(172,35,118,.05);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer}
+.check-item input{width:18px;height:18px;accent-color:var(--p);cursor:pointer;flex-shrink:0}
+.check-item span{font-size:13px;color:rgba(255,255,255,.85)}
+.btn-submit{width:100%;background:linear-gradient(135deg,var(--p),var(--a));color:#fff;border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed}
+.err-msg{color:#f87171;font-size:11px;margin-top:4px;display:none}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 20px;min-width:280px;max-width:90vw;text-align:center;transition:transform .3s ease;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{border-color:#10b981;background:rgba(16,185,129,.15)}
+.toast.error{border-color:#ef4444;background:rgba(239,68,68,.15)}
+.toast.offline{border-color:var(--p);background:rgba(172,35,118,.15)}
+.toast .t-icon{font-size:28px;margin-bottom:6px}
+.toast .t-name{font-size:16px;font-weight:800;color:#fff}
+.toast .t-msg{font-size:12px;color:var(--muted);margin-top:4px}
+.reg-list{margin-top:20px}
+.reg-list h6{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.reg-item{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px}
+.reg-avatar{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--p),var(--a));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0}
+.reg-avatar.temp{background:rgba(245,158,11,.25);color:#fbbf24}
+.reg-name{font-size:13px;font-weight:600;color:#fff}
+.reg-email{font-size:11px;color:var(--muted)}
+.reg-code{font-family:monospace;font-size:11px;color:var(--p);margin-top:1px}
+.reg-badge{font-size:10px;padding:2px 8px;border-radius:50px;font-weight:700;margin-left:auto;flex-shrink:0;white-space:nowrap}
+.reg-badge.synced{background:rgba(16,185,129,.15);color:#4ade80}
+.reg-badge.pending{background:rgba(245,158,11,.15);color:#fbbf24}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;padding:6px 0 env(safe-area-inset-bottom,6px);z-index:100}
+.bottom-nav a{flex:1;display:flex;flex-direction:column;align-items:center;color:var(--muted);text-decoration:none;font-size:9px;gap:2px;padding:3px 0}
+.bottom-nav a i{font-size:19px}
+.bottom-nav a.active{color:var(--p)}
+.sync-btn{background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <a href="{% url 'checkin:event_select' %}"><i class="bi bi-arrow-left"></i></a>
+  <div class="titles">
+    <div class="sub">Offline Registration</div>
+    <div class="ev-title">{{ event.title }}</div>
+  </div>
+  <button onclick="syncNow()" class="sync-btn" id="syncBtn">
+    <i class="bi bi-arrow-repeat"></i> Sync
+  </button>
+</div>
+
+<div class="status-bar">
+  <div class="dot online" id="statusDot"></div>
+  <span class="status-text" id="statusText">Checking…</span>
+  <span class="queue-pill" id="queuePill">0 pending</span>
+</div>
+
+<div class="content">
+
+  <div class="event-card">
+    <div class="ev-name">{{ event.title }}</div>
+    <div class="ev-meta">
+      <i class="bi bi-calendar3"></i>{{ event.start_date|date:"F d, Y" }}
+      &nbsp;·&nbsp;<i class="bi bi-geo-alt"></i>{{ event.venue }}
+    </div>
+    <div class="stats-row">
+      <div class="stat-box hi">
+        <div class="n" id="statTotal">{{ reg_count }}</div>
+        <div class="l">Total Regs</div>
+      </div>
+      <div class="stat-box">
+        <div class="n" id="statSession">0</div>
+        <div class="l">This Session</div>
+      </div>
+      <div class="stat-box">
+        <div class="n" id="statPending">0</div>
+        <div class="l">Pending Sync</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <h6><i class="bi bi-person-plus" style="color:var(--p)"></i>Register New Guest</h6>
+    <form id="regForm" onsubmit="submitReg(event)">
+      <div class="form-group">
+        <label>Full Name <span style="color:#ef4444">*</span></label>
+        <input type="text" id="fName" placeholder="Enter full name" required autocomplete="off"/>
+      </div>
+      <div class="form-group">
+        <label>Email Address <span style="color:#ef4444">*</span></label>
+        <input type="email" id="fEmail" placeholder="email@example.com" required autocomplete="off"/>
+        <div class="err-msg" id="emailError">This email is already registered for this event.</div>
+      </div>
+      <div id="dynamicFields"></div>
+      <button type="submit" class="btn-submit" id="submitBtn">
+        <i class="bi bi-check-lg"></i>Register Guest
+      </button>
+    </form>
+  </div>
+
+  <div class="reg-list" id="regListSection" style="display:none">
+    <h6>Registered This Session</h6>
+    <div id="regList"></div>
+  </div>
+
+</div>
+
+<div class="bottom-nav">
+  <a href="{% url 'checkin:offline_reg_page' event.pk %}" class="active">
+    <i class="bi bi-person-plus"></i>Register
+  </a>
+  <a href="{% url 'checkin:pwa_scanner' event.pk %}">
+    <i class="bi bi-qr-code-scan"></i>Scanner
+  </a>
+  <a href="{% url 'checkin:dashboard' event.pk %}">
+    <i class="bi bi-speedometer2"></i>Dashboard
+  </a>
+  <a href="{% url 'checkin:event_select' %}">
+    <i class="bi bi-grid"></i>Events
+  </a>
+</div>
+
+<div class="toast" id="toast">
+  <div class="t-icon" id="tIcon"></div>
+  <div class="t-name" id="tName"></div>
+  <div class="t-msg"  id="tMsg"></div>
+</div>
+
+<script>
+const EVENT_PK   = '{{ event.pk }}';
+const SYNC_URL   = '{{ sync_url }}';
+const CSRF_TOKEN = '{{ csrf_token }}';
+const FIELDS     = {{ fields_json|safe }};
+const KNOWN_EMAILS = new Set({{ existing_emails_json|safe }}.map(e => e.toLowerCase()));
+
+// ── IndexedDB ─────────────────────────────────────────────────────────────
+const DB_NAME    = 'wbng_offreg_' + EVENT_PK.substr(0,8);
+const STORE_Q    = 'queue';
+let db = null;
+
+function openDB() {
+  return new Promise(resolve => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(STORE_Q))
+        d.createObjectStore(STORE_Q, { autoIncrement: true });
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(); };
+    req.onerror   = () => resolve();
+  });
+}
+
+function idbAdd(val) {
+  return new Promise(resolve => {
+    if (!db) return resolve(null);
+    const tx = db.transaction(STORE_Q, 'readwrite');
+    const req = tx.objectStore(STORE_Q).add(val);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => resolve(null);
+  });
+}
+
+function idbAll() {
+  return new Promise(resolve => {
+    if (!db) return resolve([]);
+    const tx  = db.transaction(STORE_Q, 'readonly');
+    const req = tx.objectStore(STORE_Q).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror   = () => resolve([]);
+  });
+}
+
+function idbClear() {
+  return new Promise(resolve => {
+    if (!db) return resolve();
+    const tx = db.transaction(STORE_Q, 'readwrite');
+    tx.objectStore(STORE_Q).clear();
+    tx.oncomplete = resolve;
+    tx.onerror    = resolve;
+  });
+}
+
+// ── Dynamic fields ────────────────────────────────────────────────────────
+function renderFields() {
+  const c = document.getElementById('dynamicFields');
+  if (!FIELDS.length) return;
+  [...FIELDS].sort((a,b) => a.order - b.order).forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'form-group';
+    const req = f.is_required ? '<span style="color:#ef4444">*</span>' : '';
+    const opts = f.options ? f.options.split(',').map(o=>o.trim()).filter(Boolean) : [];
+    let inp = '';
+    if (f.field_type === 'select') {
+      inp = `<select id="df_${f.field_key}" ${f.is_required?'required':''}><option value="">-- Select --</option>${opts.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>`;
+    } else if (f.field_type === 'radio') {
+      inp = `<div class="radio-group">${opts.map(o=>`<label class="check-item"><input type="radio" name="df_${f.field_key}" value="${o}" ${f.is_required?'required':''}><span>${o}</span></label>`).join('')}</div>`;
+    } else if (f.field_type === 'checkbox') {
+      inp = `<div class="checkbox-group">${opts.map(o=>`<label class="check-item"><input type="checkbox" name="df_${f.field_key}" value="${o}"><span>${o}</span></label>`).join('')}</div>`;
+    } else if (f.field_type === 'textarea') {
+      inp = `<textarea id="df_${f.field_key}" rows="3" placeholder="${f.placeholder||''}" ${f.is_required?'required':''}></textarea>`;
+    } else {
+      inp = `<input type="${f.field_type}" id="df_${f.field_key}" placeholder="${f.placeholder||''}" ${f.is_required?'required':''}>`;
+    }
+    div.innerHTML = `<label>${f.label} ${req}</label>${inp}`;
+    c.appendChild(div);
+  });
+}
+
+function collectFields() {
+  const data = {};
+  FIELDS.forEach(f => {
+    if (f.field_type === 'checkbox') {
+      data[f.field_key] = [...document.querySelectorAll(`input[name="df_${f.field_key}"]:checked`)].map(i=>i.value).join(', ');
+    } else if (f.field_type === 'radio') {
+      const s = document.querySelector(`input[name="df_${f.field_key}"]:checked`);
+      data[f.field_key] = s ? s.value : '';
+    } else {
+      const el = document.getElementById(`df_${f.field_key}`);
+      data[f.field_key] = el ? el.value.trim() : '';
+    }
+  });
+  return data;
+}
+
+// ── Session list ──────────────────────────────────────────────────────────
+let sessionCount = 0;
+const sessionEmails = new Set();
+
+function addToList(reg, synced, code) {
+  sessionCount++;
+  sessionEmails.add(reg.email.toLowerCase());
+  document.getElementById('statSession').textContent = sessionCount;
+  document.getElementById('regListSection').style.display = 'block';
+  const list = document.getElementById('regList');
+  const el = document.createElement('div');
+  el.className = 'reg-item';
+  el.id = 'ri_' + reg.offline_id;
+  el.innerHTML = `
+    <div class="reg-avatar ${synced?'':'temp'}">${reg.name[0].toUpperCase()}</div>
+    <div style="flex:1;min-width:0">
+      <div class="reg-name">${reg.name}</div>
+      <div class="reg-email">${reg.email}</div>
+      <div class="reg-code" id="rc_${reg.offline_id}">${code||'Pending sync…'}</div>
+    </div>
+    <span class="reg-badge ${synced?'synced':'pending'}" id="rb_${reg.offline_id}">${synced?'✓ Synced':'⏳ Pending'}</span>`;
+  list.insertBefore(el, list.firstChild);
+}
+
+function markSynced(offlineId, code) {
+  const av = document.querySelector(`#ri_${offlineId} .reg-avatar`);
+  if (av) av.classList.remove('temp');
+  const rc = document.getElementById('rc_' + offlineId);
+  if (rc) rc.textContent = code || '';
+  const rb = document.getElementById('rb_' + offlineId);
+  if (rb) { rb.className = 'reg-badge synced'; rb.textContent = '✓ Synced'; }
+}
+
+// ── Submit ────────────────────────────────────────────────────────────────
+async function submitReg(e) {
+  e.preventDefault();
+  const name  = document.getElementById('fName').value.trim();
+  const email = document.getElementById('fEmail').value.trim().toLowerCase();
+  const errEl = document.getElementById('emailError');
+
+  if (KNOWN_EMAILS.has(email) || sessionEmails.has(email)) {
+    errEl.style.display = 'block';
+    document.getElementById('fEmail').focus();
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const fields    = collectFields();
+  const offlineId = 'or_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+  const reg       = { offline_id: offlineId, name, email, fields };
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Registering…';
+
+  // Optimistically add to known emails to prevent same-session duplicates
+  KNOWN_EMAILS.add(email);
+
+  let handled = false;
+  if (navigator.onLine) {
+    handled = await trySyncOne(reg);
+  }
+
+  if (!handled) {
+    // Save offline
+    await idbAdd(reg);
+    addToList(reg, false, null);
+    await refreshPendingCount();
+    showToast('offline', '📶', name, 'Saved offline — will sync & send QR when connected');
+    if (navigator.vibrate) navigator.vibrate([80,40,80]);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-check-lg"></i> Register Guest';
+  document.getElementById('regForm').reset();
+}
+
+// ── Try sync one registration ─────────────────────────────────────────────
+async function trySyncOne(reg) {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch(SYNC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN, 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'include',
+      body: JSON.stringify({ registrations: [{ name: reg.name, email: reg.email, offline_id: reg.offline_id, fields: reg.fields }] }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    if (!res.ok) return false;
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) return false;
+    const data = await res.json();
+    const result = data.results && data.results[0];
+    if (result && result.status === 'created') {
+      addToList(reg, true, result.code);
+      document.getElementById('statTotal').textContent = parseInt(document.getElementById('statTotal').textContent||'0') + 1;
+      showToast('success', '✅', reg.name, `Registered! Code: ${result.code}. Confirmation email sent.`);
+      if (navigator.vibrate) navigator.vibrate([80,40,80]);
+      return true;
+    } else if (result && result.status === 'duplicate') {
+      showToast('error', '⚠️', reg.name, 'Already registered with this email.');
+      return true;
+    }
+    return false;
+  } catch(e) {
+    return false;
+  }
+}
+
+// ── Sync all queued ───────────────────────────────────────────────────────
+async function syncNow() {
+  const queue = await idbAll();
+  if (!queue.length) {
+    showToast('success', '✓', 'All synced', 'No pending registrations.');
+    return;
+  }
+  const btn = document.getElementById('syncBtn');
+  btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Syncing…';
+  btn.disabled = true;
+  setStatus('syncing', `Syncing ${queue.length} registration${queue.length!==1?'s':''}…`);
+
+  try {
+    const payload = queue.map(r => ({ name: r.name, email: r.email, offline_id: r.offline_id, fields: r.fields||{} }));
+    const res = await fetch(SYNC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN, 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'include',
+      body: JSON.stringify({ registrations: payload }),
+    });
+    const data = await res.json();
+    let created = 0;
+    for (const r of (data.results||[])) {
+      if (r.status === 'created') {
+        markSynced(r.offline_id, r.code);
+        created++;
+        document.getElementById('statTotal').textContent = parseInt(document.getElementById('statTotal').textContent||'0') + 1;
+      }
+    }
+    await idbClear();
+    await refreshPendingCount();
+    setStatus('online', `Synced ${created} registration${created!==1?'s':''} ✓`);
+    showToast('success', '✅', 'Sync Complete', `${created} registration${created!==1?'s':''} synced. Emails & QR codes sent.`);
+  } catch(e) {
+    setStatus('offline', 'Sync failed — check connection');
+    showToast('error', '❌', 'Sync Failed', 'Could not reach server. Will retry when online.');
+  }
+  btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Sync';
+  btn.disabled = false;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+async function refreshPendingCount() {
+  const q = await idbAll();
+  document.getElementById('statPending').textContent = q.length;
+  const pill = document.getElementById('queuePill');
+  pill.textContent = `${q.length} pending`;
+  pill.classList.toggle('show', q.length > 0);
+}
+
+function setStatus(state, text) {
+  document.getElementById('statusDot').className = 'dot ' + state;
+  document.getElementById('statusText').textContent = text;
+}
+
+let toastTimer;
+function showToast(type, icon, name, msg) {
+  const t = document.getElementById('toast');
+  t.className = 'toast ' + type;
+  document.getElementById('tIcon').textContent = icon;
+  document.getElementById('tName').textContent = name;
+  document.getElementById('tMsg').textContent  = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+openDB().then(async () => {
+  renderFields();
+  await refreshPendingCount();
+  if (navigator.onLine) {
+    setStatus('online', 'Online — registrations sync instantly');
+    const q = await idbAll();
+    if (q.length) syncNow();
+  } else {
+    setStatus('offline', 'Offline — registrations saved locally');
+  }
+});
+
+window.addEventListener('online',  () => { setStatus('online',  'Back online — syncing…'); syncNow(); });
+window.addEventListener('offline', () => { setStatus('offline', 'Offline — registrations saved locally'); });
+</script>
+</body>
+</html>

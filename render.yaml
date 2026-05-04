@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: wristbandsng
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "daphne -b 0.0.0.0 -p $PORT eventpro.asgi:application"
+    plan: free
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true        # Render auto-generates a secure key
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com,wristbands.ng,www.wristbands.ng"
+      - key: CORS_ORIGINS
+        value: "https://wristbandsng.onrender.com"
+      - key: DB_ENGINE
+        value: "django.db.backends.sqlite3"
+      # Email — fill these in Render dashboard after deploy
+      # - key: EMAIL_HOST_USER
+      #   value: your@gmail.com
+      # - key: EMAIL_HOST_PASSWORD
+      #   value: your_app_password

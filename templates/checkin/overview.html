@@ -1,0 +1,161 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Check-in Overview – All Events{% endblock %}
+{% block page_title %}Check-in Overview{% endblock %}
+{% block nav_checkin %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  .ov-stat { border-radius:14px; padding:20px; border:1px solid rgba(172,35,118,.15); position:relative; overflow:hidden; }
+  .ov-stat-primary { background:linear-gradient(135deg,rgba(172,35,118,.22),rgba(172,35,118,.05)); }
+  .ov-stat-accent  { background:linear-gradient(135deg,rgba(230,87,63,.2),rgba(230,87,63,.05)); }
+  .ov-stat-green   { background:linear-gradient(135deg,rgba(16,185,129,.2),rgba(16,185,129,.05)); }
+  .ov-stat-muted   { background:linear-gradient(135deg,rgba(122,104,114,.15),rgba(122,104,114,.03)); }
+  .ov-stat .val    { font-size:32px; font-weight:800; color:#fff; line-height:1; }
+  .ov-stat .lbl    { font-size:12px; color:#7a6872; margin-top:4px; text-transform:uppercase; letter-spacing:.5px; }
+  .ov-stat .bg-ico { position:absolute; right:-10px; bottom:-10px; font-size:80px; opacity:.05; }
+
+  .ev-row { display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; background:rgba(255,255,255,.03); border:1px solid rgba(172,35,118,.1); margin-bottom:10px; }
+  .ev-dot { width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+  .ev-info { flex:1; min-width:0; }
+  .ev-title { font-size:14px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ev-meta  { font-size:11px; color:#7a6872; margin-top:2px; }
+  .ev-stats { display:flex; gap:20px; flex-shrink:0; }
+  .ev-stat-item { text-align:center; }
+  .ev-stat-item .n { font-size:18px; font-weight:800; color:#fff; line-height:1; }
+  .ev-stat-item .l { font-size:10px; color:#7a6872; text-transform:uppercase; letter-spacing:.4px; }
+  .ev-stat-item.primary .n { color:#ac2376; }
+  .ev-stat-item.accent  .n { color:#e6573f; }
+  .ev-stat-item.green   .n { color:#10b981; }
+
+  .ev-bar-wrap { width:120px; flex-shrink:0; }
+  .ev-bar-track { height:6px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; }
+  .ev-bar-fill  { height:100%; border-radius:3px; }
+  .ev-pct { font-size:11px; font-weight:700; color:#ac2376; text-align:right; margin-top:2px; }
+
+  .ev-actions { display:flex; gap:6px; flex-shrink:0; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Grand totals -->
+<div class="row g-3 mb-5">
+  <div class="col-6 col-xl-3">
+    <div class="ov-stat ov-stat-primary">
+      <div class="val">{{ grand_checkins }}</div>
+      <div class="lbl">Total Checked In</div>
+      <i class="bi bi-person-check-fill bg-ico"></i>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="ov-stat ov-stat-muted">
+      <div class="val">{{ grand_total }}</div>
+      <div class="lbl">Total Registered</div>
+      <i class="bi bi-people-fill bg-ico"></i>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="ov-stat ov-stat-accent">
+      <div class="val">{{ grand_remaining }}</div>
+      <div class="lbl">Not Arrived</div>
+      <i class="bi bi-hourglass-split bg-ico"></i>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="ov-stat ov-stat-green">
+      <div class="val">{{ grand_pct }}%</div>
+      <div class="lbl">Overall Attendance</div>
+      <i class="bi bi-graph-up bg-ico"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Export all button -->
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h6 class="text-white fw-700 mb-0">
+    <i class="bi bi-calendar-event me-2" style="color:#ac2376"></i>
+    Per-Event Breakdown — {{ events|length }} event{{ events|length|pluralize }}
+  </h6>
+  <div class="d-flex gap-2">
+    <a href="{% url 'checkin:event_select' %}" class="btn btn-ep-ghost btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Back
+    </a>
+    <a href="{% url 'checkin:export_all' %}" class="btn btn-ep-primary btn-sm">
+      <i class="bi bi-file-earmark-excel me-2"></i>Export All Events (Excel)
+    </a>
+  </div>
+</div>
+
+<!-- Per-event rows -->
+<div class="dash-card">
+  <div class="dash-card-body">
+    {% for event in events %}
+    {% with pct=0 %}
+    <div class="ev-row">
+      <div class="ev-dot" style="background:{{ event.color_theme }}"></div>
+
+      <div class="ev-info">
+        <div class="ev-title">{{ event.title }}</div>
+        <div class="ev-meta">
+          <i class="bi bi-calendar3 me-1"></i>{{ event.start_date|date:"M d, Y" }}
+          &nbsp;·&nbsp;<i class="bi bi-geo-alt me-1"></i>{{ event.venue|truncatechars:30 }}
+          &nbsp;·&nbsp;<span class="type-chip" style="font-size:10px;padding:2px 8px">{{ event.get_event_type_display }}</span>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="ev-stats d-none d-md-flex">
+        <div class="ev-stat-item primary">
+          <div class="n">{{ event.total_checkins }}</div>
+          <div class="l">In</div>
+        </div>
+        <div class="ev-stat-item">
+          <div class="n">{{ event.total_regs }}</div>
+          <div class="l">Total</div>
+        </div>
+        <div class="ev-stat-item accent">
+          <div class="n">{{ event.total_regs|add:"-"|add:event.total_checkins }}</div>
+          <div class="l">Left</div>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="ev-bar-wrap d-none d-lg-block">
+        <div class="ev-bar-track">
+          <div class="ev-bar-fill"
+               style="width:{% if event.total_regs %}{% widthratio event.total_checkins event.total_regs 100 %}{% else %}0{% endif %}%;
+                      background:linear-gradient(90deg,{{ event.color_theme }},#e6573f)">
+          </div>
+        </div>
+        <div class="ev-pct">
+          {% if event.total_regs %}{% widthratio event.total_checkins event.total_regs 100 %}{% else %}0{% endif %}%
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="ev-actions">
+        <a href="{% url 'checkin:scanner' event.pk %}"
+           class="btn btn-ep-primary btn-xs" title="Open Scanner">
+          <i class="bi bi-qr-code-scan"></i>
+        </a>
+        <a href="{% url 'checkin:dashboard' event.pk %}"
+           class="btn btn-ep-ghost btn-xs" title="Check-in Dashboard">
+          <i class="bi bi-speedometer2"></i>
+        </a>
+        <a href="{% url 'checkin:export' event.pk %}"
+           class="btn btn-ep-ghost btn-xs" title="Export this event">
+          <i class="bi bi-download"></i>
+        </a>
+      </div>
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div class="text-center py-5">
+      <i class="bi bi-calendar-x display-4 text-muted d-block mb-3"></i>
+      <p class="text-muted">No events found.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

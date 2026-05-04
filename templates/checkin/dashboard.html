@@ -1,0 +1,328 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Check-in Dashboard – {{ event.title }}{% endblock %}
+{% block page_title %}Check-in Dashboard{% endblock %}
+{% block nav_checkin %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Event identity banner */
+  .event-identity-banner {
+    background: linear-gradient(135deg, {{ event.color_theme }}22, rgba(230,87,63,.1));
+    border: 1px solid {{ event.color_theme }}44;
+    border-radius: 14px; padding: 16px 20px; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .event-identity-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: {{ event.color_theme }}; flex-shrink: 0;
+    box-shadow: 0 0 10px {{ event.color_theme }}88;
+  }
+  .event-identity-title { font-size: 18px; font-weight: 800; color: #fff; }
+  .event-identity-meta  { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 2px; }
+
+  .ci-stat { border-radius:14px; padding:20px; border:1px solid rgba(172,35,118,.15); position:relative; overflow:hidden; }
+  .ci-stat-primary { background:linear-gradient(135deg,rgba(172,35,118,.22),rgba(172,35,118,.05)); }
+  .ci-stat-accent  { background:linear-gradient(135deg,rgba(230,87,63,.2),rgba(230,87,63,.05)); }
+  .ci-stat-green   { background:linear-gradient(135deg,rgba(16,185,129,.2),rgba(16,185,129,.05)); }
+  .ci-stat-muted   { background:linear-gradient(135deg,rgba(122,104,114,.15),rgba(122,104,114,.03)); }
+  .ci-stat .val    { font-size:36px; font-weight:800; color:#fff; line-height:1; }
+  .ci-stat .lbl    { font-size:12px; color:rgba(255,255,255,0.6); font-weight:600; margin-top:4px; text-transform:uppercase; letter-spacing:.5px; }
+  .ci-stat .bg-ico { position:absolute; right:-10px; bottom:-10px; font-size:80px; opacity:.05; }
+
+  .progress-bar-wrap { height:10px; background:rgba(255,255,255,.1); border-radius:5px; overflow:hidden; margin-top:8px; }
+  .progress-bar-fill { height:100%; background:linear-gradient(90deg,{{ event.color_theme }},#e6573f); border-radius:5px; transition:width .6s ease; }
+
+  .live-dot { width:10px; height:10px; border-radius:50%; background:#10b981; display:inline-block; animation:blink 1.2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .ci-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid rgba(172,35,118,.1); }
+  .ci-row:last-child { border-bottom:none; }
+  .ci-avatar { width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,#ac2376,#e6573f); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:#fff; flex-shrink:0; }
+  .ci-name   { font-size:14px; font-weight:700; color:#fff; }
+  .ci-email  { font-size:12px; color:rgba(255,255,255,0.55); margin-top:1px; }
+  .ci-time   { font-size:12px; color:rgba(255,255,255,0.5); margin-left:auto; white-space:nowrap; font-weight:600; }
+  .ci-code   { font-family:monospace; font-size:11px; color:#e06aaa; margin-top:2px; font-weight:600; }
+
+  .not-arrived-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid rgba(172,35,118,.08); }
+  .not-arrived-row:last-child { border-bottom:none; }
+  .na-name  { font-size:14px; color:#fff; flex:1; font-weight:600; }
+  .na-email { font-size:12px; color:rgba(255,255,255,0.55); margin-top:1px; }
+
+  .log-item { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(172,35,118,.08); font-size:13px; }
+  .log-item:last-child { border-bottom:none; }
+  .log-item .log-name { color:#fff !important; font-weight:600; flex:1; }
+  .log-item .log-msg  { color:rgba(255,255,255,0.6) !important; font-size:12px; }
+  .log-item .log-ts   { color:rgba(255,255,255,0.45) !important; font-size:11px; margin-left:auto; white-space:nowrap; }
+  .log-ok   { color:#4ade80 !important; font-size:15px; }
+  .log-fail { color:#f87171 !important; font-size:15px; }
+  .log-dup  { color:#fbbf24 !important; font-size:15px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Event identity banner – makes it impossible to confuse events -->
+<div class="event-identity-banner">
+  <div class="event-identity-dot"></div>
+  <div class="flex-grow-1">
+    <div class="event-identity-title">{{ event.title }}</div>
+    <div class="event-identity-meta">
+      <i class="bi bi-calendar3 me-1"></i>{{ event.start_date|date:"F d, Y – g:i A" }}
+      &nbsp;·&nbsp;<i class="bi bi-geo-alt me-1"></i>{{ event.venue }}{% if event.city %}, {{ event.city }}{% endif %}
+      &nbsp;·&nbsp;<span class="type-chip" style="font-size:11px">{{ event.get_event_type_display }}</span>
+    </div>
+  </div>
+  <a href="{% url 'checkin:overview' %}" class="btn btn-ep-ghost btn-sm">
+    <i class="bi bi-grid me-1"></i>All Events
+  </a>
+</div>
+<!-- Header actions -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+  <div class="d-flex align-items-center gap-2">
+    <span class="live-dot"></span>
+    <span class="text-muted small">Live updates active</span>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'checkin:scanner' event.pk %}" class="btn btn-ep-primary btn-sm">
+      <i class="bi bi-qr-code-scan me-1"></i>Open Scanner
+    </a>
+    <a href="{% url 'checkin:offline_reg_page' event.pk %}" class="btn btn-ep-ghost btn-sm">
+      <i class="bi bi-person-plus me-1"></i>Offline Register
+    </a>
+    <a href="{% url 'checkin:external_qr_import' event.pk %}" class="btn btn-ep-ghost btn-sm">
+      <i class="bi bi-qr-code me-1"></i>Import QR
+    </a>
+    <a href="{% url 'checkin:manual_checkin_list' event.pk %}" class="btn btn-ep-ghost btn-sm">
+      <i class="bi bi-person-check me-1"></i>Manual Check-in
+    </a>
+    <a href="{% url 'checkin:import_guest_list' event.pk %}" class="btn btn-ep-ghost btn-sm">
+      <i class="bi bi-file-earmark-excel me-1"></i>Import Excel
+    </a>
+    <a href="{% url 'checkin:export' event.pk %}" class="btn btn-ep-ghost btn-sm">
+      <i class="bi bi-download me-1"></i>Export Excel
+    </a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="ci-stat ci-stat-primary">
+      <div class="val" id="statCI">{{ checked_in_count }}</div>
+      <div class="lbl">Checked In</div>
+      <i class="bi bi-person-check-fill bg-ico"></i>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="ci-stat ci-stat-muted">
+      <div class="val" id="statTotal">{{ total }}</div>
+      <div class="lbl">Total Registered</div>
+      <i class="bi bi-people-fill bg-ico"></i>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="ci-stat ci-stat-accent">
+      <div class="val" id="statRemaining">{{ total|add:"-"|add:checked_in_count }}</div>
+      <div class="lbl">Not Arrived</div>
+      <i class="bi bi-hourglass-split bg-ico"></i>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="ci-stat ci-stat-green">
+      <div class="val" id="statPct">{% if total %}{% widthratio checked_in_count total 100 %}{% else %}0{% endif %}%</div>
+      <div class="lbl">Attendance Rate</div>
+      <i class="bi bi-graph-up bg-ico"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Progress bar -->
+<div class="dash-card mb-4">
+  <div class="dash-card-body py-3">
+    <div class="d-flex justify-content-between mb-1">
+      <span class="text-muted small">Check-in Progress</span>
+      <span class="text-white small fw-600" id="pctLabel">{% if total %}{% widthratio checked_in_count total 100 %}{% else %}0{% endif %}%</span>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar"
+           style="width:{% if total %}{% widthratio checked_in_count total 100 %}{% else %}0{% endif %}%"></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Checked-in list -->
+  <div class="col-lg-6">
+    <div class="dash-card h-100">
+      <div class="dash-card-header d-flex justify-content-between align-items-center">
+        <h6 class="dash-card-title mb-0"><i class="bi bi-person-check me-2 text-purple"></i>Checked In</h6>
+        <span class="reg-count-badge" id="ciCount">{{ checked_in_count }}</span>
+      </div>
+      <div class="dash-card-body" style="max-height:420px;overflow-y:auto" id="checkedInList">
+        {% for reg in checked_in %}
+        <div class="ci-row" id="ci-{{ reg.pk }}">
+          <div class="ci-avatar">{{ reg.name|first|upper }}</div>
+          <div>
+            <div class="ci-name">{{ reg.name }}</div>
+            <div class="ci-email">{{ reg.email }}</div>
+            <div class="ci-code">{{ reg.registration_code }}</div>
+          </div>
+          <div class="ci-time">
+            {% if reg.checked_in_at %}{{ reg.checked_in_at|date:"H:i" }}{% endif %}
+          </div>
+          <button class="btn btn-xs btn-danger-soft ms-1"
+                  onclick="toggleCheckin('{{ event.pk }}','{{ reg.pk }}')"
+                  title="Undo check-in">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        {% empty %}
+        <p class="text-muted text-center py-4 small" id="emptyCI">No check-ins yet</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Not arrived -->
+  <div class="col-lg-6">
+    <div class="dash-card h-100">
+      <div class="dash-card-header d-flex justify-content-between align-items-center">
+        <h6 class="dash-card-title mb-0"><i class="bi bi-hourglass me-2" style="color:#e6573f"></i>Not Arrived</h6>
+        <span class="badge" style="background:rgba(230,87,63,.15);color:#e6573f;border-radius:50px;padding:3px 10px;font-size:11px" id="naCount">{{ not_arrived|length }}</span>
+      </div>
+      <div class="dash-card-body" style="max-height:420px;overflow-y:auto">
+        {% for reg in not_arrived %}
+        <div class="not-arrived-row" id="na-{{ reg.pk }}">
+          <div>
+            <div class="na-name">{{ reg.name }}</div>
+            <div class="na-email">{{ reg.email }} · <span class="ci-code">{{ reg.registration_code }}</span></div>
+          </div>
+          <button class="btn btn-xs btn-ep-primary ms-auto"
+                  onclick="toggleCheckin('{{ event.pk }}','{{ reg.pk }}')"
+                  title="Check in manually">
+            <i class="bi bi-check-lg"></i>
+          </button>
+        </div>
+        {% empty %}
+        <p class="text-muted text-center py-4 small">Everyone has arrived! 🎉</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Scan log -->
+  <div class="col-12">
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h6 class="dash-card-title mb-0"><i class="bi bi-activity me-2" style="color:#e6573f"></i>Recent Scan Activity</h6>
+      </div>
+      <div class="dash-card-body" id="scanLog" style="max-height:280px;overflow-y:auto">
+        {% for log in logs %}
+        <div class="log-item">
+          {% if log.success %}
+          <i class="bi bi-check-circle-fill log-ok"></i>
+          {% elif 'Already' in log.message %}
+          <i class="bi bi-exclamation-circle-fill log-dup"></i>
+          {% else %}
+          <i class="bi bi-x-circle-fill log-fail"></i>
+          {% endif %}
+          <span class="log-name">{{ log.registration.name|default:"Unknown" }}</span>
+          <span class="log-msg">{{ log.message }}</span>
+          <span class="log-ts">{{ log.scanned_at|date:"H:i:s" }}</span>
+        </div>
+        {% empty %}
+        <p class="text-center py-3 small" style="color:rgba(255,255,255,0.4)">No scans yet</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const EVENT_PK = '{{ event.pk }}';
+const CSRF     = '{{ csrf_token }}';
+
+// ── WebSocket real-time updates ───────────────
+const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+const ws = new WebSocket(`${wsProto}://${location.host}/ws/checkin/${EVENT_PK}/`);
+
+ws.onmessage = e => {
+  const d = JSON.parse(e.data);
+  if (d.checked_in_total !== undefined) updateStats(d.checked_in_total, d.total);
+  if (d.type === 'success' && d.registration) addCheckedInRow(d.registration);
+};
+
+// ── Poll every 8s as fallback ─────────────────
+setInterval(async () => {
+  try {
+    const r = await fetch(`/checkin/${EVENT_PK}/stats/`);
+    const d = await r.json();
+    updateStats(d.checked_in, d.total);
+    if (d.recent && d.recent.length) updateLog(d.recent);
+  } catch(e) {}
+}, 8000);
+
+function updateStats(ci, total) {
+  document.getElementById('statCI').textContent        = ci;
+  document.getElementById('statTotal').textContent     = total;
+  document.getElementById('statRemaining').textContent = total - ci;
+  document.getElementById('ciCount').textContent       = ci;
+  const pct = total ? Math.round(ci / total * 100) : 0;
+  document.getElementById('statPct').textContent       = pct + '%';
+  document.getElementById('pctLabel').textContent      = pct + '%';
+  document.getElementById('progressBar').style.width   = pct + '%';
+}
+
+function addCheckedInRow(reg) {
+  const list = document.getElementById('checkedInList');
+  const empty = document.getElementById('emptyCI');
+  if (empty) empty.remove();
+  // Remove from not-arrived
+  const naRow = document.getElementById(`na-${reg.id}`);
+  if (naRow) naRow.remove();
+  // Add to checked-in
+  if (!document.getElementById(`ci-${reg.id}`)) {
+    const el = document.createElement('div');
+    el.className = 'ci-row'; el.id = `ci-${reg.id}`;
+    el.innerHTML = `
+      <div class="ci-avatar">${reg.name[0].toUpperCase()}</div>
+      <div>
+        <div class="ci-name">${reg.name}</div>
+        <div class="ci-email">${reg.email}</div>
+        <div class="ci-code">${reg.code}</div>
+      </div>
+      <div class="ci-time">${reg.checked_in_at || ''}</div>
+      <button class="btn btn-xs btn-danger-soft ms-1"
+              onclick="toggleCheckin('${EVENT_PK}','${reg.id}')" title="Undo">
+        <i class="bi bi-x"></i>
+      </button>`;
+    list.insertBefore(el, list.firstChild);
+  }
+}
+
+function updateLog(recent) {
+  const log = document.getElementById('scanLog');
+  recent.forEach(r => {
+    const el = document.createElement('div');
+    el.className = 'log-item';
+    el.innerHTML = `<i class="bi bi-check-circle-fill log-ok"></i>
+      <span class="log-name">${r.name}</span>
+      <span class="log-msg">Checked in</span>
+      <span class="log-ts">${r.time}</span>`;
+    log.insertBefore(el, log.firstChild);
+  });
+}
+
+// ── Manual toggle ─────────────────────────────
+async function toggleCheckin(eventPk, regId) {
+  const res = await fetch(`/checkin/${eventPk}/manual/${regId}/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF }
+  });
+  const d = await res.json();
+  if (d.ok) location.reload();
+}
+</script>
+{% endblock %}

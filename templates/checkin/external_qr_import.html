@@ -1,0 +1,420 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}External QR Import – {{ event.title }}{% endblock %}
+{% block page_title %}External QR Import{% endblock %}
+{% block nav_checkin %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+.ev-banner{background:linear-gradient(135deg,{{ event.color_theme }}22,rgba(230,87,63,.08));border:1px solid {{ event.color_theme }}44;border-radius:14px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.ev-dot{width:14px;height:14px;border-radius:50%;background:{{ event.color_theme }};box-shadow:0 0 10px {{ event.color_theme }}88;flex-shrink:0}
+.ev-title{font-size:17px;font-weight:800;color:#fff}
+.ev-meta{font-size:12px;color:#7a6872;margin-top:2px}
+.tab-btns{display:flex;gap:0;background:rgba(172,35,118,.08);border:1px solid rgba(172,35,118,.2);border-radius:10px;padding:4px;margin-bottom:24px}
+.tab-btn{flex:1;padding:9px 16px;border:none;background:transparent;color:#7a6872;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.tab-btn.active{background:linear-gradient(135deg,#ac2376,#e6573f);color:#fff}
+.dropzone{border:2px dashed rgba(172,35,118,.4);border-radius:14px;padding:40px 20px;text-align:center;cursor:pointer;background:rgba(172,35,118,.04);transition:all .2s}
+.dropzone.drag-over{border-color:#ac2376;background:rgba(172,35,118,.1)}
+.dz-icon{font-size:48px;color:#ac2376;margin-bottom:12px}
+.dz-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:4px}
+.dz-sub{font-size:13px;color:#7a6872}
+.dz-file{font-size:13px;color:#10b981;font-weight:600;margin-top:8px}
+.col-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(172,35,118,.12);border:1px solid rgba(172,35,118,.2);color:#e06aaa;border-radius:50px;padding:3px 10px;font-size:11px;font-weight:600;margin:2px}
+.col-chip.req{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.25);color:#4ade80}
+.col-chip.opt{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.2);color:#60a5fa}
+.res-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(172,35,118,.07);font-size:13px}
+.res-row:last-child{border-bottom:none}
+.res-ic{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0}
+.res-ic.ok{background:rgba(16,185,129,.2);color:#4ade80}
+.res-ic.dup{background:rgba(245,158,11,.2);color:#fbbf24}
+.res-ic.err{background:rgba(239,68,68,.2);color:#f87171}
+.res-ic.skip{background:rgba(122,104,114,.2);color:#9a8090}
+.res-name{color:#fff;font-weight:600;flex:1}
+.res-code{font-family:monospace;font-size:11px;color:#ac2376}
+.res-note{font-size:11px;color:#7a6872}
+.sum-box{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.sum-s{flex:1;min-width:100px;background:rgba(172,35,118,.08);border:1px solid rgba(172,35,118,.15);border-radius:10px;padding:12px;text-align:center}
+.sum-s .n{font-size:24px;font-weight:800;color:#fff}
+.sum-s .l{font-size:11px;color:#7a6872;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.sum-s.ok .n{color:#4ade80}.sum-s.dup .n{color:#fbbf24}.sum-s.err .n{color:#f87171}
+.scan-area{background:#000;border-radius:14px;overflow:hidden;position:relative;max-height:280px}
+#extVideo{width:100%;display:block;max-height:280px;object-fit:cover}
+#extCanvas{display:none}
+.scan-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scan-bx{width:180px;height:180px;position:relative}
+.scan-bx::before,.scan-bx::after,.scan-bx span::before,.scan-bx span::after{content:'';position:absolute;width:24px;height:24px;border-color:#ac2376;border-style:solid}
+.scan-bx::before{top:0;left:0;border-width:3px 0 0 3px}
+.scan-bx::after{top:0;right:0;border-width:3px 3px 0 0}
+.scan-bx span::before{bottom:0;left:0;border-width:0 0 3px 3px}
+.scan-bx span::after{bottom:0;right:0;border-width:0 3px 3px 0}
+.scan-ln{position:absolute;left:6px;right:6px;height:2px;background:linear-gradient(90deg,transparent,#ac2376,transparent);animation:sl 2s linear infinite}
+@keyframes sl{0%{top:6px}100%{top:174px}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ev-banner">
+  <div class="ev-dot"></div>
+  <div class="flex-grow-1">
+    <div class="ev-title">{{ event.title }}</div>
+    <div class="ev-meta"><i class="bi bi-calendar3 me-1"></i>{{ event.start_date|date:"F d, Y" }} &nbsp;&middot;&nbsp; <i class="bi bi-geo-alt me-1"></i>{{ event.venue }}</div>
+  </div>
+  <a href="{% url 'dashboard:event_registrations' event.pk %}" class="btn btn-ep-ghost btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="tab-btns">
+  <button class="tab-btn active" id="tabBulk" onclick="showTab('bulk')"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Import File (Excel / CSV)</button>
+  <button class="tab-btn" id="tabScan" onclick="showTab('scan')"><i class="bi bi-qr-code-scan me-1"></i>Scan Single QR</button>
+</div>
+
+<!-- ── TAB 1: Bulk file import ── -->
+<div id="panelBulk">
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="dash-card">
+        <div class="dash-card-header"><h6 class="dash-card-title"><i class="bi bi-upload me-2" style="color:#ac2376"></i>Upload Guest File</h6></div>
+        <div class="dash-card-body">
+          <form id="bulkForm" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="dropzone mb-3" id="dropZone" onclick="document.getElementById('fileInput').click()">
+              <div class="dz-icon"><i class="bi bi-file-earmark-spreadsheet"></i></div>
+              <div class="dz-title">Drop your file here</div>
+              <div class="dz-sub">.xlsx, .xls, or .csv</div>
+              <div class="dz-file" id="fileLabel" style="display:none"></div>
+            </div>
+            <input type="file" id="fileInput" name="import_file" accept=".xlsx,.xls,.csv" style="display:none" required/>
+
+            <!-- Column preview — shown after file is selected -->
+            <div id="previewBox" style="display:none;margin-bottom:14px;background:rgba(172,35,118,.06);border:1px solid rgba(172,35,118,.2);border-radius:10px;padding:14px">
+              <div style="font-size:12px;font-weight:700;color:#7a6872;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
+                <i class="bi bi-check2-circle me-1" style="color:#10b981"></i>Detected Columns
+              </div>
+              <div id="previewCols" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px"></div>
+              <div style="font-size:11px;color:#7a6872;margin-bottom:8px">First 3 rows:</div>
+              <div id="previewRows" style="font-size:11px;font-family:monospace;color:#e8e0e5;max-height:100px;overflow-y:auto"></div>
+            </div>
+            <div class="mb-3 p-3" style="background:rgba(172,35,118,.06);border:1px solid rgba(172,35,118,.15);border-radius:10px">
+              <div class="form-check ep-form-check-dark">
+                <input class="form-check-input" type="checkbox" name="send_emails" id="sendEmails" value="1" checked/>
+                <label class="form-check-label text-white" for="sendEmails">Send confirmation emails with QR codes</label>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-ep-primary w-100" id="importBtn"><i class="bi bi-upload me-2"></i>Import Guests</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="dash-card mb-4">
+        <div class="dash-card-header"><h6 class="dash-card-title"><i class="bi bi-info-circle me-2" style="color:#ac2376"></i>File Format Guide</h6></div>
+        <div class="dash-card-body">
+          <p class="text-muted small mb-3">Your file must have a header row. Column names are detected automatically — flexible naming supported.</p>
+          <div class="mb-3">
+            <div class="mb-1" style="font-size:12px;color:#7a6872;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Required</div>
+            <span class="col-chip req"><i class="bi bi-check-circle me-1"></i>Name / Full Name / Attendee</span>
+          </div>
+          <div class="mb-3">
+            <div class="mb-1" style="font-size:12px;color:#7a6872;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Strongly Recommended</div>
+            <span class="col-chip opt"><i class="bi bi-qr-code me-1"></i>QR ID / QR Code / QR / Ticket ID / Ticket Code / Barcode / Access Code / Confirmation Code / Booking Ref / Entry Code</span>
+            <span class="col-chip opt"><i class="bi bi-envelope me-1"></i>Email / Email Address</span>
+            <div class="mt-2 p-2" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:11px;color:#f87171">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              <strong>Important:</strong> The QR ID column name must contain <strong>qr</strong>, <strong>ticket</strong>, <strong>barcode</strong>, <strong>code</strong>, <strong>ref</strong>, <strong>pass</strong>, <strong>access</strong>, <strong>confirm</strong>, <strong>booking</strong>, or <strong>entry</strong>.
+              Generic names like <strong>ID</strong>, <strong>Number</strong>, <strong>No</strong>, <strong>Serial</strong>, or <strong>Role ID</strong> are intentionally ignored to prevent conflicts.
+            </div>
+          </div>
+          <div class="mb-3">
+            <div class="mb-1" style="font-size:12px;color:#7a6872;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Optional (all columns preserved)</div>
+            <span class="col-chip"><i class="bi bi-telephone me-1"></i>Phone</span>
+            <span class="col-chip"><i class="bi bi-building me-1"></i>Company</span>
+            <span class="col-chip"><i class="bi bi-three-dots me-1"></i>Any other columns</span>
+          </div>
+          <div class="table-responsive mt-3">
+            <table class="table dash-table mb-0" style="font-size:12px">
+              <thead><tr><th>QR ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Company</th></tr></thead>
+              <tbody>
+                <tr><td class="text-white">TKT-001</td><td class="text-white">John Adeyemi</td><td class="text-muted">john@email.com</td><td class="text-muted">08012345678</td><td class="text-muted">Acme Ltd</td></tr>
+                <tr><td class="text-white">TKT-002</td><td class="text-white">Amaka Obi</td><td class="text-muted">amaka@email.com</td><td class="text-muted">08098765432</td><td class="text-muted">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="text-muted small mt-3 mb-0"><i class="bi bi-lightbulb me-1" style="color:#f59e0b"></i>The QR ID links each guest to their original external system and is stored alongside their WristbandsNG registration.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="importResults" style="display:none">
+    <div class="dash-card">
+      <div class="dash-card-header d-flex justify-content-between align-items-center">
+        <h6 class="dash-card-title mb-0"><i class="bi bi-check2-all me-2" style="color:#10b981"></i>Import Results</h6>
+        <a href="{% url 'dashboard:event_registrations' event.pk %}" class="btn btn-ep-primary btn-sm"><i class="bi bi-people me-1"></i>View Registrations</a>
+      </div>
+      <div class="dash-card-body">
+        <div class="sum-box" id="summaryBox"></div>
+        <div id="resultsList" style="max-height:400px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB 2: Single QR scan ── -->
+<div id="panelScan" style="display:none">
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="dash-card">
+        <div class="dash-card-header"><h6 class="dash-card-title"><i class="bi bi-qr-code-scan me-2" style="color:#ac2376"></i>Scan External QR Code</h6></div>
+        <div class="dash-card-body">
+          <div class="scan-area mb-3">
+            <video id="extVideo" autoplay playsinline muted></video>
+            <canvas id="extCanvas"></canvas>
+            <div class="scan-ov"><div class="scan-bx"><span></span><div class="scan-ln"></div></div></div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-ep-primary flex-grow-1" id="btnCam" onclick="startCam()"><i class="bi bi-camera-video me-1"></i>Start Camera</button>
+            <button class="btn btn-ep-ghost" onclick="stopCam()"><i class="bi bi-stop-circle"></i></button>
+            <button class="btn btn-ep-ghost" onclick="flipCam()"><i class="bi bi-arrow-repeat"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="dash-card">
+        <div class="dash-card-header"><h6 class="dash-card-title"><i class="bi bi-person-plus me-2" style="color:#e6573f"></i>Guest Details</h6></div>
+        <div class="dash-card-body">
+          <div class="mb-3">
+            <label class="form-label dash-label">External QR ID (auto-filled on scan)</label>
+            <input type="text" id="scannedQrId" class="form-control ep-input-dark" placeholder="Scan a QR code or type the ID manually…" autocomplete="off"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label dash-label">Full Name <span class="text-danger">*</span></label>
+            <input type="text" id="sName" class="form-control ep-input-dark" placeholder="Guest full name" required/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label dash-label">Email Address</label>
+            <input type="email" id="sEmail" class="form-control ep-input-dark" placeholder="guest@email.com"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label dash-label">Phone</label>
+            <input type="tel" id="sPhone" class="form-control ep-input-dark" placeholder="Phone number"/>
+          </div>
+          {% for field in fields %}
+          <div class="mb-3">
+            <label class="form-label dash-label">{{ field.label }}{% if field.is_required %} <span class="text-danger">*</span>{% endif %}</label>
+            <input type="text" id="sf_{{ field.field_key }}" data-key="{{ field.field_key }}" class="form-control ep-input-dark sf-field" placeholder="{{ field.placeholder }}"/>
+          </div>
+          {% endfor %}
+          <div class="mb-3 p-3" style="background:rgba(172,35,118,.06);border:1px solid rgba(172,35,118,.15);border-radius:10px">
+            <div class="form-check ep-form-check-dark">
+              <input class="form-check-input" type="checkbox" id="sSendEmail" checked/>
+              <label class="form-check-label text-white" for="sSendEmail">Send confirmation email with QR code</label>
+            </div>
+          </div>
+          <button class="btn btn-ep-primary w-100" onclick="submitSingle()" id="singleBtn"><i class="bi bi-check-circle me-2"></i>Create Registration</button>
+          <div id="singleResult" class="mt-3" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+const BULK_URL    = '{% url "checkin:external_qr_bulk" event.pk %}';
+const SINGLE_URL  = '{% url "checkin:external_qr_process" event.pk %}';
+const PREVIEW_URL = '{% url "checkin:external_qr_preview" event.pk %}';
+const CSRF        = '{{ csrf_token }}';
+let cam = null, scanning = false, facing = 'environment';
+
+function showTab(t) {
+  document.getElementById('panelBulk').style.display = t==='bulk' ? 'block' : 'none';
+  document.getElementById('panelScan').style.display = t==='scan' ? 'block' : 'none';
+  document.getElementById('tabBulk').className = 'tab-btn' + (t==='bulk' ? ' active' : '');
+  document.getElementById('tabScan').className = 'tab-btn' + (t==='scan' ? ' active' : '');
+  if (t !== 'scan') stopCam();
+}
+
+// ── File select + auto-preview ────────────────────────────────────────────
+const dz = document.getElementById('dropZone');
+const fi = document.getElementById('fileInput');
+const fl = document.getElementById('fileLabel');
+
+async function handleFileSelected(file) {
+  if (!file) return;
+  fl.textContent = '✓ ' + file.name;
+  fl.style.display = 'block';
+
+  // Auto-preview columns
+  const fd = new FormData();
+  fd.append('import_file', file);
+  fd.append('csrfmiddlewaretoken', CSRF);
+  try {
+    const res  = await fetch(PREVIEW_URL, { method: 'POST', body: fd, credentials: 'include' });
+    const data = await res.json();
+    if (data.error) { document.getElementById('previewBox').style.display = 'none'; return; }
+    showPreview(data);
+  } catch(e) { document.getElementById('previewBox').style.display = 'none'; }
+}
+
+function showPreview(data) {
+  const box  = document.getElementById('previewBox');
+  const cols = document.getElementById('previewCols');
+  const rows = document.getElementById('previewRows');
+  box.style.display = 'block';
+
+  const colMap = {
+    qr_id: { label: 'QR ID', color: '#ac2376' },
+    name:  { label: 'Name',  color: '#10b981' },
+    email: { label: 'Email', color: '#3b82f6' },
+    phone: { label: 'Phone', color: '#f59e0b' },
+  };
+
+  cols.innerHTML = '';
+  let hasQr = false;
+  for (const [key, info] of Object.entries(colMap)) {
+    const val = data.detected[key];
+    if (val) {
+      if (key === 'qr_id') hasQr = true;
+      cols.innerHTML += `<span style="background:rgba(${key==='qr_id'?'172,35,118':'59,130,246'},.15);
+        border:1px solid ${info.color}44;color:${info.color};border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700">
+        ${info.label}: <span style="font-family:monospace">${val}</span></span>`;
+    }
+  }
+
+  if (!hasQr) {
+    cols.innerHTML += `<span style="background:rgba(245,158,11,.15);border:1px solid #f59e0b44;color:#fbbf24;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700">
+      ⚠️ No QR ID column detected — first column will be used</span>`;
+  }
+
+  // Show sample rows
+  rows.innerHTML = (data.sample_rows || []).slice(0,3).map(row => {
+    const qrVal = data.detected.qr_id ? row[data.detected.qr_id] : '—';
+    const nameVal = data.detected.name ? row[data.detected.name] : '—';
+    return `<div style="padding:2px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+      <span style="color:#ac2376">QR: ${qrVal}</span> &nbsp;|&nbsp;
+      <span style="color:#10b981">Name: ${nameVal}</span>
+    </div>`;
+  }).join('');
+}
+
+fi.addEventListener('change', () => { if(fi.files[0]) handleFileSelected(fi.files[0]); });
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) { const dt = new DataTransfer(); dt.items.add(f); fi.files = dt.files; handleFileSelected(f); }
+});
+
+// ── Bulk import ───────────────────────────────────────────────────────────
+document.getElementById('bulkForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!fi.files[0]) { alert('Please select a file first.'); return; }
+  const btn = document.getElementById('importBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Importing…';
+  try {
+    const res  = await fetch(BULK_URL, { method: 'POST', body: new FormData(e.target), credentials: 'include' });
+    const data = await res.json();
+    data.error ? alert('Error: ' + data.error) : showResults(data);
+  } catch(err) { alert('Network error: ' + err.message); }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-upload me-2"></i>Import Guests';
+});
+
+function showResults(data) {
+  const wrap = document.getElementById('importResults');
+  wrap.style.display = 'block';
+  wrap.scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('summaryBox').innerHTML =
+    `<div class="sum-s ok"><div class="n">${data.created}</div><div class="l">Created</div></div>
+     <div class="sum-s dup"><div class="n">${data.skipped}</div><div class="l">Skipped</div></div>
+     <div class="sum-s err"><div class="n">${data.errors}</div><div class="l">Errors</div></div>
+     <div class="sum-s"><div class="n">${data.total_rows}</div><div class="l">Total Rows</div></div>`;
+  const list = document.getElementById('resultsList');
+  list.innerHTML = '';
+  (data.results || []).forEach(r => {
+    const ic = r.status==='created'?'ok':r.status==='duplicate'?'dup':r.status==='skipped'?'skip':'err';
+    const it = r.status==='created'?'✓':r.status==='duplicate'?'D':r.status==='skipped'?'—':'✗';
+    const el = document.createElement('div');
+    el.className = 'res-row';
+    el.innerHTML = `<div class="res-ic ${ic}">${it}</div>
+      <div class="res-name">${r.name||'—'}</div>
+      <div class="res-note">${r.email||''}</div>
+      ${r.code ? `<div class="res-code">${r.code}</div>` : ''}
+      ${r.external_qr_id ? `<div class="res-note" style="color:#ac2376;font-family:monospace" title="External QR ID — scan this original QR to check in">&#x1F4F1; ${r.external_qr_id}</div>` : ''}
+      ${r.qr_mode === 'external' ? `<span style="font-size:9px;background:rgba(172,35,118,.2);color:#e06aaa;border-radius:4px;padding:1px 5px;font-weight:700">EXT QR</span>` : ''}
+      ${r.reason && r.status!=='created' ? `<div class="res-note">${r.reason}</div>` : ''}`;
+    list.appendChild(el);
+  });
+}
+
+// ── Camera ────────────────────────────────────────────────────────────────
+async function startCam() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { alert('Camera not available. Type the QR ID manually.'); return; }
+  try {
+    if (cam) cam.getTracks().forEach(t => t.stop());
+    cam = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } } });
+    const v = document.getElementById('extVideo'); v.srcObject = cam; v.play();
+    scanning = true;
+    document.getElementById('btnCam').innerHTML = '<i class="bi bi-camera-video-fill me-1"></i>Scanning…';
+    requestAnimationFrame(tick);
+  } catch(e) { alert('Camera error: ' + e.message); }
+}
+function stopCam() { scanning = false; if(cam){cam.getTracks().forEach(t=>t.stop());cam=null;} document.getElementById('btnCam').innerHTML='<i class="bi bi-camera-video me-1"></i>Start Camera'; }
+function flipCam() { facing = facing==='environment'?'user':'environment'; if(scanning) startCam(); }
+function tick() {
+  if (!scanning) return;
+  const v = document.getElementById('extVideo'), c = document.getElementById('extCanvas');
+  if (v.readyState === v.HAVE_ENOUGH_DATA) {
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    const ctx = c.getContext('2d'); ctx.drawImage(v, 0, 0);
+    const code = jsQR(ctx.getImageData(0, 0, c.width, c.height).data, c.width, c.height, { inversionAttempts: 'dontInvert' });
+    if (code && code.data) { stopCam(); document.getElementById('scannedQrId').value = code.data; document.getElementById('sName').focus(); return; }
+  }
+  requestAnimationFrame(tick);
+}
+
+// ── Single submit ─────────────────────────────────────────────────────────
+async function submitSingle() {
+  const qrId = document.getElementById('scannedQrId').value.trim();
+  const name = document.getElementById('sName').value.trim();
+  const email = document.getElementById('sEmail').value.trim();
+  const phone = document.getElementById('sPhone').value.trim();
+  if (!name) { document.getElementById('sName').focus(); return; }
+  const fm = { name, email };
+  if (phone) fm.phone = phone;
+  if (qrId)  fm.external_qr_id = qrId;
+  document.querySelectorAll('.sf-field').forEach(i => { if(i.value.trim()) fm[i.dataset.key] = i.value.trim(); });
+  const btn = document.getElementById('singleBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating…';
+  try {
+    const res  = await fetch(SINGLE_URL, { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF}, credentials:'include', body: JSON.stringify({ qr_data: qrId, field_map: fm, send_email: document.getElementById('sSendEmail').checked }) });
+    const data = await res.json();
+    const el = document.getElementById('singleResult'); el.style.display = 'block';
+    if (data.status === 'created') {
+      el.innerHTML = `<div style="background:rgba(16,185,129,.12);border:2px solid #10b981;border-radius:12px;padding:16px;text-align:center">
+        <div style="font-size:28px;margin-bottom:6px">&#x2705;</div>
+        <div style="font-size:16px;font-weight:800;color:#fff">${data.name}</div>
+        <div style="font-family:monospace;font-size:14px;color:#ac2376;font-weight:800;margin-top:4px">${data.registration_code}</div>
+        <div style="font-size:12px;color:#b09aa8;margin-top:4px">${data.email_sent?'Confirmation email sent.':'Registration created.'}</div>
+        ${data.qr_url?`<div style="margin-top:12px"><img src="${data.qr_url}" style="width:120px;height:120px;background:#fff;padding:8px;border-radius:8px"/></div>`:''}
+      </div>`;
+      ['scannedQrId','sName','sEmail','sPhone'].forEach(id => document.getElementById(id).value = '');
+      document.querySelectorAll('.sf-field').forEach(i => i.value = '');
+    } else {
+      const col = data.status==='duplicate' ? '245,158,11' : '239,68,68';
+      const bdr = data.status==='duplicate' ? '#f59e0b' : '#ef4444';
+      el.innerHTML = `<div style="background:rgba(${col},.12);border:2px solid ${bdr};border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:22px;margin-bottom:4px">${data.status==='duplicate'?'&#x26A0;&#xFE0F;':'&#x274C;'}</div>
+        <div style="font-size:14px;font-weight:700;color:#fff">${data.message||data.error}</div>
+        ${data.registration_code?`<div style="font-family:monospace;font-size:12px;color:#ac2376;margin-top:4px">${data.registration_code}</div>`:''}
+      </div>`;
+    }
+  } catch(e) { alert('Error: ' + e.message); }
+  btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Create Registration';
+}
+</script>
+{% endblock %}

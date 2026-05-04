@@ -1,0 +1,249 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Manual Check-in – {{ event.title }}{% endblock %}
+{% block page_title %}Manual Check-in{% endblock %}
+{% block nav_checkin %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+.event-identity-banner { background:linear-gradient(135deg,rgba(172,35,118,.12),rgba(230,87,63,.06)); border:1px solid rgba(172,35,118,.2); border-radius:14px; padding:16px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:24px; }
+.event-identity-dot { width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+.event-identity-title { font-size:17px; font-weight:800; color:#fff; }
+.event-identity-meta { font-size:12px; color:#7a6872; margin-top:2px; }
+
+.search-bar-wrap { position:relative; }
+.search-bar-wrap i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#7a6872; font-size:18px; pointer-events:none; }
+.search-input { width:100%; background:rgba(172,35,118,.07); border:1px solid rgba(172,35,118,.25); color:#fff; border-radius:12px; padding:14px 14px 14px 44px; font-size:15px; outline:none; transition:all .2s; }
+.search-input:focus { border-color:#ac2376; box-shadow:0 0 0 3px rgba(172,35,118,.18); background:rgba(172,35,118,.1); }
+.search-input::placeholder { color:#7a6872; }
+
+.guest-card {
+  background:#181418; border:1px solid rgba(172,35,118,.12);
+  border-radius:12px; padding:14px 16px; margin-bottom:8px;
+  display:flex; align-items:center; gap:14px;
+}
+.guest-card.checked { border-color:rgba(16,185,129,.3); background:rgba(16,185,129,.05); }
+
+.guest-avatar {
+  width:42px; height:42px; border-radius:12px; flex-shrink:0;
+  background:linear-gradient(135deg,#ac2376,#e6573f);
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; font-weight:800; color:#fff;
+}
+.guest-avatar.checked-av { background:linear-gradient(135deg,#10b981,#059669); }
+
+.guest-name  { font-size:14px; font-weight:700; color:#fff; }
+.guest-email { font-size:12px; color:#7a6872; margin-top:1px; }
+.guest-code  { font-family:monospace; font-size:11px; color:#ac2376; margin-top:2px; }
+.guest-time  { font-size:11px; color:#10b981; margin-top:2px; }
+
+.checkin-btn {
+  background:linear-gradient(135deg,#ac2376,#e6573f);
+  color:#fff; border:none; border-radius:10px;
+  padding:8px 18px; font-size:13px; font-weight:700;
+  cursor:pointer; white-space:nowrap;
+  display:flex; align-items:center; gap:6px;
+}
+.checkin-btn:disabled { opacity:.5; cursor:not-allowed; }
+.undo-btn {
+  background:rgba(239,68,68,.1); color:#ef4444;
+  border:1px solid rgba(239,68,68,.2); border-radius:10px;
+  padding:8px 14px; font-size:12px; font-weight:600;
+  cursor:pointer; white-space:nowrap;
+}
+
+.checked-badge { background:rgba(16,185,129,.15); color:#10b981; border-radius:50px; padding:3px 10px; font-size:11px; font-weight:700; }
+.pending-badge { background:rgba(172,35,118,.12); color:#ac2376; border-radius:50px; padding:3px 10px; font-size:11px; font-weight:700; }
+
+.stat-strip { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+.stat-pill { background:#181418; border:1px solid rgba(172,35,118,.15); border-radius:50px; padding:8px 18px; display:flex; align-items:center; gap:8px; }
+.stat-pill .n { font-size:18px; font-weight:800; color:#fff; }
+.stat-pill .l { font-size:11px; color:#7a6872; }
+
+.empty-search { text-align:center; padding:48px 20px; }
+.empty-search i { font-size:48px; color:#3a2030; display:block; margin-bottom:12px; }
+.empty-search p { color:#7a6872; font-size:14px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Event identity -->
+<div class="event-identity-banner">
+  <div class="event-identity-dot" style="background:{{ event.color_theme }};box-shadow:0 0 10px {{ event.color_theme }}88"></div>
+  <div class="flex-grow-1">
+    <div class="event-identity-title">{{ event.title }}</div>
+    <div class="event-identity-meta">
+      <i class="bi bi-calendar3 me-1"></i>{{ event.start_date|date:"F d, Y" }}
+      &nbsp;·&nbsp;<i class="bi bi-geo-alt me-1"></i>{{ event.venue }}
+    </div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'checkin:import_guest_list' event.pk %}" class="btn btn-ep-ghost btn-sm">
+      <i class="bi bi-file-earmark-excel me-1"></i>Import Excel
+    </a>
+    <a href="{% url 'checkin:pwa_scanner' event.pk %}" class="btn btn-ep-primary btn-sm">
+      <i class="bi bi-qr-code-scan me-1"></i>QR Scanner
+    </a>
+    <a href="{% url 'checkin:dashboard' event.pk %}" class="btn btn-ep-ghost btn-sm">
+      <i class="bi bi-speedometer2 me-1"></i>Dashboard
+    </a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stat-strip">
+  <div class="stat-pill">
+    <div class="n" style="color:#ac2376">{{ checked_in_count }}</div>
+    <div class="l">Checked In</div>
+  </div>
+  <div class="stat-pill">
+    <div class="n">{{ total }}</div>
+    <div class="l">Total Guests</div>
+  </div>
+  <div class="stat-pill">
+    <div class="n" style="color:#e6573f">{{ total|add:"-"|add:checked_in_count }}</div>
+    <div class="l">Remaining</div>
+  </div>
+</div>
+
+<!-- Search bar -->
+<form method="get" id="searchForm">
+  <div class="search-bar-wrap mb-4">
+    <i class="bi bi-search"></i>
+    <input type="text" name="q" id="searchInput" class="search-input"
+           value="{{ query }}"
+           placeholder="Search by name, email or registration code…"
+           autocomplete="off" autocorrect="off" autocapitalize="off"
+           autofocus/>
+  </div>
+</form>
+
+<!-- Results -->
+{% if query %}
+  {% if registrations %}
+  <p class="text-muted small mb-3">{{ registrations|length }} result{{ registrations|length|pluralize }} for "<strong class="text-white">{{ query }}</strong>"</p>
+  <div id="guestList">
+    {% for reg in registrations %}
+    <div class="guest-card {% if reg.checked_in %}checked{% endif %}" id="guest-{{ reg.pk }}">
+      <div class="guest-avatar {% if reg.checked_in %}checked-av{% endif %}">
+        {{ reg.name|first|upper }}
+      </div>
+      <div class="flex-grow-1 min-w-0">
+        <div class="guest-name">{{ reg.name }}</div>
+        <div class="guest-email">{{ reg.email }}</div>
+        <div class="guest-code">{{ reg.registration_code }}</div>
+        {% if reg.checked_in and reg.checked_in_at %}
+        <div class="guest-time"><i class="bi bi-check-circle-fill me-1"></i>Checked in at {{ reg.checked_in_at|date:"H:i" }}</div>
+        {% endif %}
+      </div>
+      <div class="d-flex flex-column align-items-end gap-2">
+        {% if reg.checked_in %}
+          <span class="checked-badge"><i class="bi bi-check-lg me-1"></i>Checked In</span>
+          <button class="undo-btn" onclick="toggleCheckin('{{ event.pk }}','{{ reg.pk }}','{{ reg.name|escapejs }}',this)">
+            <i class="bi bi-x me-1"></i>Undo
+          </button>
+        {% else %}
+          <span class="pending-badge">Not Arrived</span>
+          <button class="checkin-btn" onclick="toggleCheckin('{{ event.pk }}','{{ reg.pk }}','{{ reg.name|escapejs }}',this)">
+            <i class="bi bi-check-lg"></i>Check In
+          </button>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-search">
+    <i class="bi bi-person-x"></i>
+    <p>No guest found matching "<strong class="text-white">{{ query }}</strong>"</p>
+    <p class="mt-2 small">Try searching by first name, last name, email or registration code.</p>
+  </div>
+  {% endif %}
+{% else %}
+<div class="empty-search">
+  <i class="bi bi-person-search"></i>
+  <p>Type a guest's name, email or registration code above to find them.</p>
+  <p class="mt-2 small">You can also <a href="{% url 'checkin:import_guest_list' event.pk %}" style="color:#ac2376">import a guest list from Excel</a> if you haven't already.</p>
+</div>
+{% endif %}
+
+<!-- Toast notification -->
+<div id="ciToast" style="
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(100px);
+  background:linear-gradient(135deg,#ac2376,#e6573f); color:#fff;
+  padding:12px 24px; border-radius:50px; font-weight:700; font-size:14px;
+  box-shadow:0 8px 32px rgba(172,35,118,.5); transition:transform .3s ease;
+  z-index:9999; white-space:nowrap; pointer-events:none;
+"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = '{{ csrf_token }}';
+
+// Live search as you type
+let searchTimer;
+document.getElementById('searchInput').addEventListener('input', function() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    document.getElementById('searchForm').submit();
+  }, 400);
+});
+
+async function toggleCheckin(eventPk, regId, name, btn) {
+  btn.disabled = true;
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+  try {
+    const res  = await fetch(`/checkin/${eventPk}/manual/${regId}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF }
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      const card = document.getElementById(`guest-${regId}`);
+      if (data.checked_in) {
+        // Update card to checked-in state
+        card.classList.add('checked');
+        card.querySelector('.guest-avatar').classList.add('checked-av');
+        const statusDiv = card.querySelector('.d-flex.flex-column');
+        statusDiv.innerHTML = `
+          <span class="checked-badge"><i class="bi bi-check-lg me-1"></i>Checked In</span>
+          <button class="undo-btn" onclick="toggleCheckin('${eventPk}','${regId}','${name}',this)">
+            <i class="bi bi-x me-1"></i>Undo
+          </button>`;
+        showToast(`✅ ${name} checked in!`);
+      } else {
+        // Undo — back to not arrived
+        card.classList.remove('checked');
+        card.querySelector('.guest-avatar').classList.remove('checked-av');
+        const statusDiv = card.querySelector('.d-flex.flex-column');
+        statusDiv.innerHTML = `
+          <span class="pending-badge">Not Arrived</span>
+          <button class="checkin-btn" onclick="toggleCheckin('${eventPk}','${regId}','${name}',this)">
+            <i class="bi bi-check-lg"></i>Check In
+          </button>`;
+        showToast(`↩ ${name} unchecked`);
+      }
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+    showToast('⚠️ Network error — try again');
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('ciToast');
+  t.textContent = msg;
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(() => {
+    t.style.transform = 'translateX(-50%) translateY(100px)';
+  }, 3000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Registration Closed – {{ event.title }}{% endblock %}
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-5 text-center">
+        <div class="ep-glass-card p-5">
+          <i class="bi bi-lock-fill display-3 text-warning mb-3"></i>
+          <h3 class="text-white fw-700">Registration Closed</h3>
+          {% if reason == 'registration_closed' %}
+          <p class="text-muted">Registrations for <strong class="text-white">{{ event.title }}</strong> are currently closed by the organiser.</p>
+          {% elif reason == 'deadline' %}
+          <p class="text-muted">The registration deadline for <strong class="text-white">{{ event.title }}</strong> has passed.</p>
+          {% elif reason == 'full' %}
+          <p class="text-muted"><strong class="text-white">{{ event.title }}</strong> is fully booked. No more spots available.</p>
+          {% endif %}
+          <a href="{% url 'events_list' %}" class="btn btn-ep-primary mt-3">Browse Other Events</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

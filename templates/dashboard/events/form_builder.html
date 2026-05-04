@@ -1,0 +1,158 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Form Builder – {{ event.title }}{% endblock %}
+{% block page_title %}Form Builder{% endblock %}
+{% block nav_events %}active{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- Left: Add Field -->
+  <div class="col-lg-4">
+    <div class="dash-card sticky-top" style="top:80px">
+      <div class="dash-card-header">
+        <h6 class="dash-card-title"><i class="bi bi-plus-circle me-2 text-purple"></i>Add Field</h6>
+      </div>
+      <div class="dash-card-body">
+        <form method="post" action="{% url 'dashboard:add_form_field' event.pk %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label dash-label">Field Label <span class="text-danger">*</span></label>
+            <input type="text" name="label" class="form-control ep-input-dark" placeholder="e.g. Phone Number" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label dash-label">Field Type <span class="text-danger">*</span></label>
+            <select name="field_type" class="form-select ep-input-dark" id="fieldTypeSelect" required>
+              {% for val, label in field_types %}
+              <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label dash-label">Placeholder</label>
+            <input type="text" name="placeholder" class="form-control ep-input-dark" placeholder="Hint text..." />
+          </div>
+          <div class="mb-3" id="optionsGroup" style="display:none">
+            <label class="form-label dash-label">Options <span class="text-muted small">(comma-separated)</span></label>
+            <input type="text" name="options" class="form-control ep-input-dark" placeholder="Option A, Option B, Option C" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label dash-label">Help Text</label>
+            <input type="text" name="help_text" class="form-control ep-input-dark" placeholder="Optional helper text" />
+          </div>
+          <div class="mb-4">
+            <div class="form-check ep-form-check-dark">
+              <input class="form-check-input" type="checkbox" name="is_required" id="isRequired" checked />
+              <label class="form-check-label text-muted" for="isRequired">Required field</label>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-ep-primary w-100">
+            <i class="bi bi-plus-lg me-2"></i>Add Field
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Form Preview -->
+  <div class="col-lg-8">
+    <div class="dash-card mb-4">
+      <div class="dash-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h6 class="dash-card-title mb-0"><i class="bi bi-eye me-2 text-blue"></i>Form Preview – {{ event.title }}</h6>
+          <p class="text-muted small mb-0 mt-1">{{ fields|length }} field{{ fields|length|pluralize }} configured</p>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{% url 'register' event.slug %}" class="btn btn-sm btn-ep-ghost" target="_blank">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Live Form
+          </a>
+          <a href="{% url 'dashboard:event_edit' event.pk %}" class="btn btn-sm btn-ep-ghost">
+            <i class="bi bi-pencil me-1"></i>Edit Event
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Always-present fields notice -->
+    <div class="dash-card mb-3" style="border-left:3px solid #6c63ff">
+      <div class="dash-card-body py-3">
+        <p class="text-muted small mb-0"><i class="bi bi-info-circle me-2 text-purple"></i>
+        <strong class="text-white">Name</strong> and <strong class="text-white">Email</strong> fields are always included by default on every registration form.</p>
+      </div>
+    </div>
+
+    {% if fields %}
+    <div id="fieldsList">
+      {% for field in fields %}
+      <div class="dash-card mb-3 field-item" data-id="{{ field.pk }}">
+        <div class="dash-card-body">
+          <div class="d-flex justify-content-between align-items-start gap-3">
+            <div class="flex-grow-1">
+              <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                <span class="field-type-chip field-type-{{ field.field_type }}">
+                  {% if field.field_type == 'text' %}<i class="bi bi-input-cursor-text"></i>
+                  {% elif field.field_type == 'email' %}<i class="bi bi-envelope"></i>
+                  {% elif field.field_type == 'tel' %}<i class="bi bi-telephone"></i>
+                  {% elif field.field_type == 'number' %}<i class="bi bi-hash"></i>
+                  {% elif field.field_type == 'textarea' %}<i class="bi bi-text-paragraph"></i>
+                  {% elif field.field_type == 'select' %}<i class="bi bi-chevron-down"></i>
+                  {% elif field.field_type == 'radio' %}<i class="bi bi-record-circle"></i>
+                  {% elif field.field_type == 'checkbox' %}<i class="bi bi-check-square"></i>
+                  {% elif field.field_type == 'date' %}<i class="bi bi-calendar3"></i>
+                  {% elif field.field_type == 'file' %}<i class="bi bi-paperclip"></i>
+                  {% endif %}
+                  {{ field.get_field_type_display }}
+                </span>
+                {% if field.is_required %}<span class="badge bg-danger-soft text-danger" style="font-size:10px">Required</span>{% endif %}
+                <span class="text-muted small font-mono">{{ field.field_key }}</span>
+              </div>
+              <h6 class="text-white fw-600 mb-1">{{ field.label }}</h6>
+              {% if field.placeholder %}<p class="text-muted small mb-1">Placeholder: {{ field.placeholder }}</p>{% endif %}
+              {% if field.options %}<p class="text-muted small mb-0">Options: {{ field.options }}</p>{% endif %}
+              {% if field.help_text %}<p class="text-muted small mb-0"><i class="bi bi-question-circle me-1"></i>{{ field.help_text }}</p>{% endif %}
+            </div>
+            <div class="d-flex gap-1 flex-shrink-0">
+              <span class="drag-handle text-muted" style="cursor:grab"><i class="bi bi-grip-vertical"></i></span>
+              <form method="post" action="{% url 'dashboard:delete_form_field' event.pk field.pk %}" onsubmit="return confirm('Remove this field?')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-xs btn-danger-soft"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="dash-card">
+      <div class="dash-card-body text-center py-5">
+        <i class="bi bi-ui-checks display-4 text-muted d-block mb-3"></i>
+        <p class="text-muted">No custom fields yet. Add fields using the panel on the left.</p>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if fields %}
+    <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-3">
+      <a href="{% url 'dashboard:event_registrations' event.pk %}" class="btn btn-ep-ghost">
+        <i class="bi bi-people me-2"></i>View Registrations
+      </a>
+      <a href="{% url 'register' event.slug %}" class="btn btn-ep-primary" target="_blank">
+        <i class="bi bi-box-arrow-up-right me-2"></i>Open Registration Page
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const fieldTypeSelect = document.getElementById('fieldTypeSelect');
+const optionsGroup = document.getElementById('optionsGroup');
+const optionTypes = ['select', 'radio', 'checkbox'];
+fieldTypeSelect.addEventListener('change', function() {
+  optionsGroup.style.display = optionTypes.includes(this.value) ? 'block' : 'none';
+});
+</script>
+{% endblock %}

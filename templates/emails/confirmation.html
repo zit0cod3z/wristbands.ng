@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registration Confirmed</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f0f1a; color: #e0e0e0; }
+    .wrapper { max-width: 600px; margin: 0 auto; background: #0f0f1a; }
+    .header { background: linear-gradient(135deg, #ac2376 0%, #e6573f 100%); padding: 48px 40px; text-align: center; border-radius: 16px 16px 0 0; }
+    .header .logo { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: -1px; }
+    .header .logo span { color: #e6573f; }
+    .header h1 { color: #fff; font-size: 32px; font-weight: 800; margin-top: 20px; line-height: 1.2; }
+    .header p { color: rgba(255,255,255,0.85); margin-top: 8px; font-size: 16px; }
+    .confetti-bar { height: 6px; background: linear-gradient(90deg, #ac2376, #e6573f, #ac2376, #e6573f, #ac2376); }
+    .body { background: #1a1014; padding: 40px; }
+    .greeting { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .body p { color: #b09aa8; line-height: 1.7; font-size: 15px; margin-bottom: 16px; }
+    .info-card { background: #221018; border: 1px solid #3a1a2a; border-radius: 12px; padding: 24px; margin: 24px 0; }
+    .info-card h3 { color: #ac2376; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #2a1a22; }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: #7a5868; font-size: 13px; }
+    .info-value { color: #fff; font-weight: 600; font-size: 14px; text-align: right; max-width: 60%; }
+    .code-box { background: linear-gradient(135deg, #ac237622, #e6573f22); border: 2px solid #ac2376; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0; }
+    .code-box .label { color: #b09aa8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .code-box .code { color: #ac2376; font-size: 28px; font-weight: 900; letter-spacing: 4px; font-family: 'Courier New', monospace; margin-top: 6px; }
+    .qr-section { text-align: center; margin: 32px 0; }
+    .qr-section h3 { color: #fff; font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .qr-section p { color: #b09aa8; font-size: 13px; margin-bottom: 16px; }
+    .qr-box { display: inline-block; background: #fff; padding: 16px; border-radius: 12px; }
+    .qr-box img { width: 180px; height: 180px; display: block; }
+    .tips { background: #221018; border-left: 4px solid #e6573f; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; }
+    .tips h4 { color: #e6573f; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+    .tips ul { color: #b09aa8; font-size: 13px; padding-left: 16px; }
+    .tips ul li { margin-bottom: 4px; }
+    .cta-btn { display: block; background: linear-gradient(135deg, #ac2376, #e6573f); color: #fff; text-decoration: none; text-align: center; padding: 16px 32px; border-radius: 50px; font-weight: 700; font-size: 16px; margin: 24px 0; }
+    .footer { background: #0d080b; padding: 32px 40px; text-align: center; border-radius: 0 0 16px 16px; }
+    .footer p { color: #5a3848; font-size: 12px; line-height: 1.8; }
+    .footer a { color: #ac2376; text-decoration: none; }
+    .social-links a { display: inline-block; width: 36px; height: 36px; background: #221018; border-radius: 50%; line-height: 36px; text-align: center; margin: 0 4px; color: #ac2376; font-size: 14px; text-decoration: none; }
+    .footer a { color: #6c63ff; text-decoration: none; }
+    .social-links { margin: 16px 0; }
+    .social-links a { display: inline-block; width: 36px; height: 36px; background: #1e1e38; border-radius: 50%; line-height: 36px; text-align: center; margin: 0 4px; color: #6c63ff; font-size: 14px; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header">
+    <div class="logo">Wristbands<span>NG</span></div>
+    <h1>🎉 You're Registered!</h1>
+    <p>Your spot is confirmed. Get ready for an amazing experience.</p>
+  </div>
+  <div class="confetti-bar"></div>
+  <div class="body">
+    <p class="greeting">Hey {{ registration.name }} 👋</p>
+    <p>We're thrilled to confirm your registration for <strong style="color:#fff">{{ registration.event.title }}</strong>. Everything is set — just show up and enjoy!</p>
+
+    <div class="info-card">
+      <h3>📅 Event Details</h3>
+      <div class="info-row">
+        <span class="info-label">Event</span>
+        <span class="info-value">{{ registration.event.title }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Type</span>
+        <span class="info-value">{{ registration.event.get_event_type_display }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Date</span>
+        <span class="info-value">{{ registration.event.start_date|date:"F d, Y" }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Time</span>
+        <span class="info-value">{{ registration.event.start_date|date:"g:i A" }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Venue</span>
+        <span class="info-value">{{ registration.event.venue }}</span>
+      </div>
+      {% if registration.event.city %}
+      <div class="info-row">
+        <span class="info-label">City</span>
+        <span class="info-value">{{ registration.event.city }}{% if registration.event.country %}, {{ registration.event.country }}{% endif %}</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="code-box">
+      <div class="label">Your Registration Code</div>
+      <div class="code">{{ registration.registration_code }}</div>
+    </div>
+
+    <div class="qr-section">
+      <h3>🔲 Your Entry QR Code</h3>
+      <p>Present this QR code at the entrance for quick check-in. It's also attached to this email.</p>
+      {% if qr_available %}
+      <div class="qr-box">
+        <img src="cid:qrcode" alt="QR Code" width="180" height="180"
+             style="display:block;width:180px;height:180px;border:0;" />
+      </div>
+      {% else %}
+      <p style="color:#ff6b6b">QR code is attached to this email as a file.</p>
+      {% endif %}
+    </div>
+
+    <div class="tips">
+      <h4>💡 Tips for the Day</h4>
+      <ul>
+        <li>Arrive 15–20 minutes early for smooth check-in</li>
+        <li>Keep this email handy or screenshot your QR code</li>
+        <li>Bring a valid ID matching your registration name</li>
+        <li>Check the venue address before heading out</li>
+      </ul>
+    </div>
+
+    <p>If you have any questions or need to make changes, please contact the event organizer. We can't wait to see you there!</p>
+    <p style="color:#6060a0; font-size:13px;">This is an automated confirmation. Please do not reply to this email.</p>
+  </div>
+  <div class="footer">
+    <div class="social-links">
+      <a href="#">𝕏</a>
+      <a href="#">in</a>
+      <a href="#">f</a>
+    </div>
+    <p>© {% now "Y" %} WristbandsNG. All rights reserved.<br />
+    You received this email because you registered for an event on WristbandsNG.<br />
+    <a href="#">Unsubscribe</a> · <a href="#">Privacy Policy</a></p>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,140 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Registrations – {{ event.title }}{% endblock %}
+{% block page_title %}{{ event.title }} – Registrations{% endblock %}
+{% block nav_regs %}active{% endblock %}
+
+{% block content %}
+<!-- Header Actions -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+  <div>
+    <span class="status-badge status-{{ event.status }} me-2">{{ event.get_status_display }}</span>
+    <span class="text-muted small">{{ registrations|length }} registrant{{ registrations|length|pluralize }}</span>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <form method="get" class="d-flex gap-2">
+      <input type="text" name="q" value="{{ search }}" class="form-control ep-input-dark" placeholder="Search name or email..." style="width:220px" />
+      <button class="btn btn-ep-ghost" type="submit"><i class="bi bi-search"></i></button>
+    </form>
+    <a href="{% url 'dashboard:manual_add_registration' event.pk %}" class="btn btn-ep-ghost">
+      <i class="bi bi-person-plus me-1"></i>Add Manually
+    </a>
+    <a href="{% url 'checkin:external_qr_import' event.pk %}" class="btn btn-ep-ghost">
+      <i class="bi bi-qr-code me-1"></i>Import External QR
+    </a>
+    <a href="{% url 'dashboard:export_registrations' event.pk %}" class="btn btn-ep-primary">
+      <i class="bi bi-file-earmark-excel me-2"></i>Export Excel
+    </a>
+  </div>
+</div>
+
+<!-- Registrations Table -->
+<div class="dash-card">
+  <div class="dash-card-body p-0">
+    <div class="table-responsive">
+      <table class="table dash-table mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Registrant</th>
+            <th>Code</th>
+            <th>Registered</th>
+            <th>QR</th>
+            <th>Email Sent</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for reg in registrations %}
+          <tr>
+            <td class="text-muted small">{{ forloop.counter }}</td>
+            <td>
+              <div class="fw-600 text-white">{{ reg.name }}</div>
+              <div class="text-muted small">{{ reg.email }}</div>
+            </td>
+            <td><span class="font-mono text-purple small">{{ reg.registration_code }}</span></td>
+            <td><span class="text-muted small">{{ reg.registered_at|date:"M d, Y H:i" }}</span></td>
+            <td>
+              {% if reg.qr_code %}
+              <a href="{{ reg.qr_code.url }}" target="_blank" class="qr-thumb-link">
+                <img src="{{ reg.qr_code.url }}" alt="QR" class="qr-thumb" />
+              </a>
+              {% else %}
+              <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if reg.email_sent %}
+              <span class="badge bg-success-soft text-success"><i class="bi bi-check me-1"></i>Sent</span>
+              {% else %}
+              <span class="badge bg-warning-soft text-warning"><i class="bi bi-clock me-1"></i>Pending</span>
+              {% endif %}
+            </td>
+            <td><span class="status-badge status-{{ reg.status }}">{{ reg.get_status_display }}</span></td>
+            <td>
+              <div class="d-flex gap-1">
+                <!-- Send QR -->
+                <a href="{% url 'dashboard:send_qr_manual' reg.pk %}" class="btn btn-xs btn-ep-ghost" title="Send QR Code">
+                  <i class="bi bi-qr-code"></i>
+                </a>
+                <!-- View Details -->
+                <button class="btn btn-xs btn-ep-ghost" data-bs-toggle="modal" data-bs-target="#regModal{{ forloop.counter }}" title="View Details">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <!-- Delete -->
+                <form method="post" action="{% url 'dashboard:delete_registration' reg.pk %}" onsubmit="return confirm('Delete this registration?')" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-xs btn-danger-soft" title="Delete"><i class="bi bi-trash"></i></button>
+                </form>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Detail Modal -->
+          <div class="modal fade" id="regModal{{ forloop.counter }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content dash-modal">
+                <div class="modal-header">
+                  <h6 class="modal-title text-white fw-700">{{ reg.name }}</h6>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="reg-detail-grid">
+                    <div class="reg-detail-row"><span>Code</span><span class="font-mono text-purple">{{ reg.registration_code }}</span></div>
+                    <div class="reg-detail-row"><span>Email</span><span>{{ reg.email }}</span></div>
+                    <div class="reg-detail-row"><span>Registered</span><span>{{ reg.registered_at|date:"M d, Y H:i" }}</span></div>
+                    <div class="reg-detail-row"><span>Status</span><span>{{ reg.get_status_display }}</span></div>
+                    {% for data in reg.field_data.all %}
+                    <div class="reg-detail-row"><span>{{ data.field_label }}</span><span>{{ data.value|default:"—" }}</span></div>
+                    {% endfor %}
+                  </div>
+                  {% if reg.qr_code %}
+                  <div class="text-center mt-4">
+                    <img src="{{ reg.qr_code.url }}" alt="QR" style="width:150px;background:#fff;padding:8px;border-radius:8px" />
+                  </div>
+                  {% endif %}
+                </div>
+                <div class="modal-footer">
+                  <a href="{% url 'dashboard:send_qr_manual' reg.pk %}" class="btn btn-ep-primary btn-sm">
+                    <i class="bi bi-send me-1"></i>Resend QR
+                  </a>
+                  <button class="btn btn-ep-ghost btn-sm" data-bs-dismiss="modal">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5">
+              <i class="bi bi-people display-4 text-muted d-block mb-3"></i>
+              <p class="text-muted">No registrations yet for this event.</p>
+              <a href="{% url 'dashboard:manual_add_registration' event.pk %}" class="btn btn-ep-primary btn-sm">Add Manually</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Register – {{ event.title }}{% endblock %}
+{% block extra_css %}
+<style>
+  :root { --event-color: {{ event.color_theme }}; }
+  .reg-hero { background: linear-gradient(135deg, {{ event.color_theme }}22 0%, #0f0f1a 60%); }
+  .btn-register { background: {{ event.color_theme }}; border-color: {{ event.color_theme }}; }
+  .btn-register:hover { filter: brightness(1.15); }
+  .field-accent { border-left: 3px solid {{ event.color_theme }}; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reg-hero pt-5">
+  <div class="container py-5 mt-4">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+
+        <!-- Event Info Card -->
+        <div class="ep-glass-card mb-4 p-4">
+          <div class="d-flex align-items-start gap-4 flex-wrap">
+            {% if event.banner %}
+            <img src="{{ event.banner.url }}" alt="{{ event.title }}" class="rounded-3" style="width:100px;height:80px;object-fit:cover;" />
+            {% else %}
+            <div class="event-icon-box" style="background:{{ event.color_theme }}22;color:{{ event.color_theme }}">
+              <i class="bi bi-calendar-event fs-2"></i>
+            </div>
+            {% endif %}
+            <div class="flex-grow-1">
+              <span class="event-type-badge mb-2 d-inline-block" style="background:{{ event.color_theme }}">{{ event.get_event_type_display }}</span>
+              <h2 class="text-white fw-700 mb-1">{{ event.title }}</h2>
+              <div class="d-flex flex-wrap gap-3 text-muted small">
+                <span><i class="bi bi-calendar3 me-1"></i>{{ event.start_date|date:"F d, Y – g:i A" }}</span>
+                <span><i class="bi bi-geo-alt me-1"></i>{{ event.venue }}{% if event.city %}, {{ event.city }}{% endif %}</span>
+                {% if event.capacity > 0 %}
+                <span><i class="bi bi-people me-1"></i>{{ event.spots_left }} spots left</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% if event.description %}
+          <p class="text-muted mt-3 mb-0 small">{{ event.description }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Registration Form -->
+        <div class="ep-glass-card p-4 p-lg-5">
+          <h4 class="text-white fw-700 mb-1">Complete Your Registration</h4>
+          <p class="text-muted small mb-4">Fill in the details below to secure your spot.</p>
+
+          {% if messages %}
+          {% for msg in messages %}
+          <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+            {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+          {% endfor %}
+          {% endif %}
+
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <!-- Always-present fields -->
+            <div class="mb-4 field-accent ps-3">
+              <label class="form-label text-white fw-500">Full Name <span class="text-danger">*</span></label>
+              <input type="text" name="name" class="form-control ep-input" placeholder="Enter your full name" required />
+            </div>
+            <div class="mb-4 field-accent ps-3">
+              <label class="form-label text-white fw-500">Email Address <span class="text-danger">*</span></label>
+              <input type="email" name="email" class="form-control ep-input" placeholder="your@email.com" required />
+              <div class="form-text text-muted">Your QR code and confirmation will be sent here.</div>
+            </div>
+
+            <!-- Dynamic fields -->
+            {% for field in fields %}
+            <div class="mb-4 field-accent ps-3">
+              <label class="form-label text-white fw-500">
+                {{ field.label }}
+                {% if field.is_required %}<span class="text-danger">*</span>{% endif %}
+              </label>
+
+              {% if field.field_type == 'text' %}
+              <input type="text" name="{{ field.field_key }}" class="form-control ep-input" placeholder="{{ field.placeholder }}" {% if field.is_required %}required{% endif %} />
+
+              {% elif field.field_type == 'email' %}
+              <input type="email" name="{{ field.field_key }}" class="form-control ep-input" placeholder="{{ field.placeholder }}" {% if field.is_required %}required{% endif %} />
+
+              {% elif field.field_type == 'tel' %}
+              <input type="tel" name="{{ field.field_key }}" class="form-control ep-input" placeholder="{{ field.placeholder }}" {% if field.is_required %}required{% endif %} />
+
+              {% elif field.field_type == 'number' %}
+              <input type="number" name="{{ field.field_key }}" class="form-control ep-input" placeholder="{{ field.placeholder }}" {% if field.is_required %}required{% endif %} />
+
+              {% elif field.field_type == 'date' %}
+              <input type="date" name="{{ field.field_key }}" class="form-control ep-input" {% if field.is_required %}required{% endif %} />
+
+              {% elif field.field_type == 'textarea' %}
+              <textarea name="{{ field.field_key }}" class="form-control ep-input" rows="3" placeholder="{{ field.placeholder }}" {% if field.is_required %}required{% endif %}></textarea>
+
+              {% elif field.field_type == 'select' %}
+              <select name="{{ field.field_key }}" class="form-select ep-input" {% if field.is_required %}required{% endif %}>
+                <option value="">-- Select an option --</option>
+                {% for opt in field.get_options_list %}
+                <option value="{{ opt }}">{{ opt }}</option>
+                {% endfor %}
+              </select>
+
+              {% elif field.field_type == 'radio' %}
+              <div class="ep-radio-group">
+                {% for opt in field.get_options_list %}
+                <div class="form-check ep-form-check">
+                  <input class="form-check-input" type="radio" name="{{ field.field_key }}" id="{{ field.field_key }}_{{ forloop.counter }}" value="{{ opt }}" {% if field.is_required and forloop.first %}required{% endif %} />
+                  <label class="form-check-label" for="{{ field.field_key }}_{{ forloop.counter }}">{{ opt }}</label>
+                </div>
+                {% endfor %}
+              </div>
+
+              {% elif field.field_type == 'checkbox' %}
+              <div class="ep-checkbox-group">
+                {% for opt in field.get_options_list %}
+                <div class="form-check ep-form-check">
+                  <input class="form-check-input" type="checkbox" name="{{ field.field_key }}" id="{{ field.field_key }}_{{ forloop.counter }}" value="{{ opt }}" />
+                  <label class="form-check-label" for="{{ field.field_key }}_{{ forloop.counter }}">{{ opt }}</label>
+                </div>
+                {% endfor %}
+              </div>
+
+              {% elif field.field_type == 'file' %}
+              <input type="file" name="{{ field.field_key }}" class="form-control ep-input" {% if field.is_required %}required{% endif %} />
+              {% endif %}
+
+              {% if field.help_text %}
+              <div class="form-text text-muted">{{ field.help_text }}</div>
+              {% endif %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="btn btn-register btn-lg w-100 text-white fw-600 mt-2">
+              <i class="bi bi-check-circle me-2"></i>Complete Registration
+            </button>
+            <p class="text-center text-muted small mt-3">
+              <i class="bi bi-shield-lock me-1"></i>Your information is secure and will only be used for this event.
+            </p>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

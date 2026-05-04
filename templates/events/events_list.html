@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}
+  {% if selected_type %}
+    {% for val, label in event_types %}{% if val == selected_type %}{{ label }}s{% endif %}{% endfor %} – WristbandsNG
+  {% else %}
+    All Events – WristbandsNG
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="page-header-section">
+  <div class="container py-5 mt-5">
+    <h1 class="page-title text-white">
+      {% if selected_type %}
+        {% for val, label in event_types %}{% if val == selected_type %}{{ label }}s{% endif %}{% endfor %}
+      {% else %}
+        Discover Events
+      {% endif %}
+    </h1>
+    <p class="text-muted">
+      {% if selected_type %}
+        Browse all {{ selected_type }} events — register and secure your spot
+      {% else %}
+        Find and register for events near you
+      {% endif %}
+    </p>
+    <form method="get" class="d-flex gap-2 flex-wrap mt-4">
+      <input type="text" name="q" value="{{ search|default:'' }}" class="form-control ep-input flex-grow-1" placeholder="Search events..." style="max-width:320px" />
+      <select name="type" class="form-select ep-input" style="max-width:200px">
+        <option value="">All Types</option>
+        {% for val, label in event_types %}
+        <option value="{{ val }}" {% if selected_type == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-ep-primary" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+      {% if selected_type %}
+      <a href="{% url 'events_list' %}" class="btn btn-ep-ghost"><i class="bi bi-x me-1"></i>Clear Filter</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+<div class="container py-5">
+  <div class="row g-4">
+    {% for event in events %}
+    <div class="col-lg-4 col-md-6">
+      <div class="ep-event-card h-100">
+        <div class="event-card-banner" style="background: linear-gradient(135deg, {{ event.color_theme }}22, {{ event.color_theme }}66);">
+          {% if event.banner %}<img src="{{ event.banner.url }}" alt="{{ event.title }}" class="event-banner-img" />
+          {% else %}<div class="event-banner-placeholder"><i class="bi bi-calendar-event"></i></div>{% endif %}
+          <span class="event-type-badge" style="background:{{ event.color_theme }}">{{ event.get_event_type_display }}</span>
+        </div>
+        <div class="event-card-body">
+          <h5 class="event-title">{{ event.title }}</h5>
+          <p class="event-desc">{{ event.description|truncatewords:15 }}</p>
+          <div class="event-meta">
+            <span><i class="bi bi-calendar3"></i> {{ event.start_date|date:"M d, Y" }}</span>
+            <span><i class="bi bi-geo-alt"></i> {{ event.city|default:event.venue|truncatechars:22 }}</span>
+          </div>
+          <a href="{% url 'register' event.slug %}" class="btn btn-ep-primary w-100 mt-3" style="background:{{ event.color_theme }};border-color:{{ event.color_theme }}">
+            Register Now <i class="bi bi-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+      <i class="bi bi-calendar-x display-3 text-muted"></i>
+      <h4 class="text-muted mt-3">No events found</h4>
+      <p class="text-muted">Try adjusting your search or check back later.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

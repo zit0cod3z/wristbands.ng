@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+  <meta name="theme-color" content="#ac2376"/>
+  <title>Scanner – {{ event.title }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <!-- jsQR – pure JS QR decoder, no server needed -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <style>
+    :root { --p:#ac2376; --a:#e6573f; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Inter',sans-serif; background:#0d0d12; color:#e8e0e5; min-height:100vh; }
+
+    /* ── Top bar ── */
+    .scanner-header {
+      background:linear-gradient(135deg,var(--p),var(--a));
+      padding:14px 16px; display:flex; align-items:center; gap:12px;
+      position:sticky; top:0; z-index:50;
+    }
+    .scanner-header h1 { font-size:15px; font-weight:700; color:#fff; flex:1; }
+    .scanner-header a  { color:rgba(255,255,255,0.8); font-size:20px; text-decoration:none; }
+
+    /* ── Stats strip ── */
+    .stats-strip {
+      display:flex; background:#181418; border-bottom:1px solid rgba(172,35,118,0.15);
+    }
+    .stat-box { flex:1; text-align:center; padding:10px 4px; border-right:1px solid rgba(172,35,118,0.1); }
+    .stat-box:last-child { border-right:none; }
+    .stat-box .val { font-size:22px; font-weight:800; color:#fff; }
+    .stat-box .lbl { font-size:10px; color:#7a6872; text-transform:uppercase; letter-spacing:.5px; }
+    .stat-box.highlight .val { color:var(--p); }
+
+    /* ── Camera viewport ── */
+    .camera-wrap {
+      position:relative; background:#000;
+      width:100%; max-width:480px; margin:0 auto;
+    }
+    #video { width:100%; display:block; }
+    #canvas { display:none; }
+    .scan-overlay {
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      pointer-events:none;
+    }
+    .scan-frame {
+      width:220px; height:220px; position:relative;
+    }
+    .scan-frame::before,.scan-frame::after,
+    .scan-frame span::before,.scan-frame span::after {
+      content:''; position:absolute; width:30px; height:30px;
+      border-color:var(--p); border-style:solid;
+    }
+    .scan-frame::before  { top:0;    left:0;  border-width:3px 0 0 3px; }
+    .scan-frame::after   { top:0;    right:0; border-width:3px 3px 0 0; }
+    .scan-frame span::before { bottom:0; left:0;  border-width:0 0 3px 3px; }
+    .scan-frame span::after  { bottom:0; right:0; border-width:0 3px 3px 0; }
+    .scan-line {
+      position:absolute; left:10px; right:10px; height:2px;
+      background:linear-gradient(90deg,transparent,var(--p),transparent);
+      animation:scanline 2s linear infinite;
+    }
+    @keyframes scanline { 0%{top:10px} 100%{top:210px} }
+
+    /* ── Result card ── */
+    .result-card {
+      margin:12px 16px; border-radius:14px; padding:16px;
+      display:none; animation:popIn .25s ease;
+    }
+    @keyframes popIn { from{transform:scale(.9);opacity:0} to{transform:scale(1);opacity:1} }
+    .result-card.success  { background:rgba(16,185,129,.15); border:2px solid #10b981; }
+    .result-card.duplicate{ background:rgba(245,158,11,.15);  border:2px solid #f59e0b; }
+    .result-card.denied   { background:rgba(239,68,68,.15);   border:2px solid #ef4444; }
+    .result-card.not_found{ background:rgba(239,68,68,.15);   border:2px solid #ef4444; }
+    .result-card.error    { background:rgba(239,68,68,.15);   border:2px solid #ef4444; }
+    .result-icon { font-size:36px; margin-bottom:8px; }
+    .result-name { font-size:20px; font-weight:800; color:#fff; }
+    .result-msg  { font-size:13px; color:#b09aa8; margin-top:4px; }
+    .result-code { font-family:monospace; font-size:12px; color:#7a6872; margin-top:6px; }
+
+    /* ── Manual input ── */
+    .manual-section { padding:12px 16px; }
+    .manual-section label { font-size:12px; color:#7a6872; font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; display:block; }
+    .manual-row { display:flex; gap:8px; }
+    .manual-input {
+      flex:1; background:rgba(172,35,118,.08); border:1px solid rgba(172,35,118,.25);
+      color:#fff; border-radius:10px; padding:10px 14px; font-size:14px;
+    }
+    .manual-input:focus { outline:none; border-color:var(--p); box-shadow:0 0 0 3px rgba(172,35,118,.2); }
+    .btn-scan-manual {
+      background:linear-gradient(135deg,var(--p),var(--a)); color:#fff;
+      border:none; border-radius:10px; padding:10px 18px; font-weight:600; cursor:pointer;
+    }
+
+    /* ── Recent scans ── */
+    .recent-section { padding:0 16px 80px; }
+    .recent-section h6 { font-size:12px; color:#7a6872; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+    .scan-item {
+      display:flex; align-items:center; gap:10px;
+      background:#181418; border:1px solid rgba(172,35,118,.1);
+      border-radius:10px; padding:10px 12px; margin-bottom:6px;
+    }
+    .scan-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .scan-dot.ok  { background:#10b981; }
+    .scan-dot.bad { background:#ef4444; }
+    .scan-dot.dup { background:#f59e0b; }
+    .scan-name { font-size:13px; font-weight:600; color:#fff; }
+    .scan-time { font-size:11px; color:#7a6872; margin-left:auto; }
+
+    /* ── Camera toggle ── */
+    .cam-controls { display:flex; gap:8px; padding:8px 16px; background:#181418; }
+    .cam-btn {
+      flex:1; background:rgba(172,35,118,.1); border:1px solid rgba(172,35,118,.2);
+      color:#e8e0e5; border-radius:8px; padding:8px; font-size:12px; font-weight:600;
+      cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;
+    }
+    .cam-btn.active { background:rgba(172,35,118,.25); color:var(--p); border-color:var(--p); }
+
+    /* ── Bottom nav ── */
+    .bottom-nav {
+      position:fixed; bottom:0; left:0; right:0;
+      background:#181418; border-top:1px solid rgba(172,35,118,.15);
+      display:flex; padding:8px 0 env(safe-area-inset-bottom);
+    }
+    .bottom-nav a {
+      flex:1; display:flex; flex-direction:column; align-items:center;
+      color:#7a6872; text-decoration:none; font-size:10px; gap:3px; padding:4px 0;
+    }
+    .bottom-nav a i { font-size:20px; }
+    .bottom-nav a.active { color:var(--p); }
+  </style>
+</head>
+<body>
+
+<div class="scanner-header">
+  <a href="{% url 'checkin:event_select' %}"><i class="bi bi-arrow-left"></i></a>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">Now Scanning</div>
+    <h1>{{ event.title|truncatechars:32 }}</h1>
+  </div>
+  <a href="{% url 'checkin:dashboard' event.pk %}"><i class="bi bi-speedometer2"></i></a>
+</div>
+
+<div class="stats-strip">
+  <div class="stat-box highlight">
+    <div class="val" id="statCheckedIn">{{ checked_in }}</div>
+    <div class="lbl">Checked In</div>
+  </div>
+  <div class="stat-box">
+    <div class="val" id="statTotal">{{ total }}</div>
+    <div class="lbl">Registered</div>
+  </div>
+  <div class="stat-box">
+    <div class="val" id="statRemaining">{{ total|add:"-"|add:checked_in }}</div>
+    <div class="lbl">Remaining</div>
+  </div>
+  <div class="stat-box">
+    <div class="val" id="statPercent">{% if total %}{% widthratio checked_in total 100 %}{% else %}0{% endif %}%</div>
+    <div class="lbl">Progress</div>
+  </div>
+</div>
+
+<!-- Camera -->
+<div class="camera-wrap" id="cameraWrap">
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="canvas"></canvas>
+  <div class="scan-overlay">
+    <div class="scan-frame">
+      <span></span>
+      <div class="scan-line"></div>
+    </div>
+  </div>
+</div>
+
+<div class="cam-controls">
+  <button class="cam-btn active" id="btnCamera" onclick="toggleCamera()">
+    <i class="bi bi-camera-video"></i> Camera
+  </button>
+  <button class="cam-btn" id="btnFlip" onclick="flipCamera()">
+    <i class="bi bi-arrow-repeat"></i> Flip
+  </button>
+  <button class="cam-btn" id="btnStop" onclick="stopCamera()">
+    <i class="bi bi-stop-circle"></i> Stop
+  </button>
+</div>
+
+<!-- Result -->
+<div class="result-card" id="resultCard">
+  <div class="text-center">
+    <div class="result-icon" id="resultIcon"></div>
+    <div class="result-name" id="resultName"></div>
+    <div class="result-msg"  id="resultMsg"></div>
+    <div class="result-code" id="resultCode"></div>
+  </div>
+</div>
+
+<!-- Manual input -->
+<div class="manual-section">
+  <label>Manual Entry – type or paste registration code</label>
+  <div class="manual-row">
+    <input type="text" class="manual-input" id="manualInput"
+           placeholder="e.g. EVT-ABC1234" autocomplete="off" autocapitalize="characters"/>
+    <button class="btn-scan-manual" onclick="submitManual()">
+      <i class="bi bi-search"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Recent scans -->
+<div class="recent-section">
+  <h6>Recent Scans</h6>
+  <div id="recentList"></div>
+</div>
+
+<div class="bottom-nav">
+  <a href="{% url 'checkin:scanner' event.pk %}" class="active">
+    <i class="bi bi-qr-code-scan"></i>Scanner
+  </a>
+  <a href="{% url 'checkin:dashboard' event.pk %}">
+    <i class="bi bi-speedometer2"></i>Dashboard
+  </a>
+  <a href="{% url 'checkin:export' event.pk %}">
+    <i class="bi bi-file-earmark-excel"></i>Export
+  </a>
+  <a href="{% url 'checkin:event_select' %}">
+    <i class="bi bi-grid"></i>Events
+  </a>
+</div>
+
+<script>
+const EVENT_PK   = '{{ event.pk }}';
+const SCAN_URL   = '{% url "checkin:process_scan" event.pk %}';
+const CSRF_TOKEN = '{{ csrf_token }}';
+
+let stream = null;
+let scanning = false;
+let lastCode = '';
+let lastCodeTime = 0;
+let facingMode = 'environment'; // rear camera by default
+const video  = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+
+// ── Start camera ──────────────────────────────
+async function startCamera() {
+  // mediaDevices only works on HTTPS or localhost
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    const isHttp = location.protocol === 'http:' && !['localhost','127.0.0.1'].includes(location.hostname);
+    const wrap = document.getElementById('cameraWrap');
+    wrap.innerHTML = `
+      <div style="background:rgba(172,35,118,.1);border:2px dashed rgba(172,35,118,.4);
+                  border-radius:14px;padding:24px 20px;text-align:center;margin:8px">
+        <div style="font-size:32px;margin-bottom:8px">🔒</div>
+        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:8px">
+          ${location.protocol === 'http:' ? 'HTTPS Required for Camera' : 'Camera Not Available'}
+        </div>
+        <div style="font-size:12px;color:#b09aa8;line-height:1.7;text-align:left">
+          ${isHttp
+            ? 'Browsers block camera access on HTTP. You need HTTPS (SSL certificate on your domain) for camera to work on mobile.<br><br>For now, use the <strong>Manual Entry</strong> box below to type registration codes.'
+            : 'Camera API not available on this device. Use manual entry below.'}
+        </div>
+        <button onclick="startCamera()" style="margin-top:12px;background:linear-gradient(135deg,#ac2376,#e6573f);
+          color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer">
+          ↺ Retry
+        </button>
+      </div>`;
+    return;
+  }
+  try {
+    if (stream) { stream.getTracks().forEach(t => t.stop()); }
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    video.srcObject = stream;
+    video.play();
+    scanning = true;
+    requestAnimationFrame(tick);
+    document.getElementById('btnCamera').classList.add('active');
+  } catch(e) {
+    const wrap = document.getElementById('cameraWrap');
+    const msg = e.name === 'NotAllowedError'
+      ? 'Camera permission denied. Tap the 🔒 in your browser bar → Site Settings → Camera → Allow, then retry.'
+      : e.message;
+    wrap.innerHTML = `
+      <div style="background:rgba(239,68,68,.1);border:2px dashed rgba(239,68,68,.3);
+                  border-radius:14px;padding:20px;text-align:center;margin:8px">
+        <div style="font-size:28px;margin-bottom:8px">🚫</div>
+        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">Camera Error</div>
+        <div style="font-size:12px;color:#b09aa8">${msg}</div>
+        <button onclick="startCamera()" style="margin-top:12px;background:linear-gradient(135deg,#ac2376,#e6573f);
+          color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer">
+          ↺ Retry
+        </button>
+      </div>`;
+  }
+}
+
+function stopCamera() {
+  scanning = false;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  document.getElementById('btnCamera').classList.remove('active');
+}
+
+function toggleCamera() {
+  if (scanning) { stopCamera(); } else { startCamera(); }
+}
+
+function flipCamera() {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  if (scanning) startCamera();
+}
+
+// ── QR decode loop ────────────────────────────
+function tick() {
+  if (!scanning) return;
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    const img  = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+    if (code) {
+      const now = Date.now();
+      // Debounce: same code within 3 seconds = ignore
+      if (code.data !== lastCode || now - lastCodeTime > 3000) {
+        lastCode = code.data;
+        lastCodeTime = now;
+        processCode(code.data);
+      }
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+// ── Send code to server ───────────────────────
+async function processCode(code) {
+  try {
+    const res = await fetch(SCAN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+      body: JSON.stringify({ code })
+    });
+    const data = await res.json();
+    handleResult(data, code);
+  } catch(e) {
+    showResult('error', '⚠️', 'Network Error', 'Could not reach server', code);
+  }
+}
+
+function submitManual() {
+  const val = document.getElementById('manualInput').value.trim();
+  if (!val) return;
+  processCode(val);
+  document.getElementById('manualInput').value = '';
+}
+
+document.getElementById('manualInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitManual();
+});
+
+// ── Handle result ─────────────────────────────
+function handleResult(data, rawCode) {
+  const s = data.status;
+  const d = data.data || {};
+  const icons = { success:'✅', duplicate:'⚠️', denied:'🚫', not_found:'❌', error:'⚠️' };
+  showResult(s, icons[s] || '❓', d.name || '—', data.message, d.code || rawCode);
+
+  // Vibrate feedback
+  if (navigator.vibrate) {
+    if (s === 'success')   navigator.vibrate([100, 50, 100]);
+    else if (s === 'duplicate') navigator.vibrate(300);
+    else navigator.vibrate([200, 100, 200]);
+  }
+
+  // Update stats
+  if (data.data && data.checked_in_total !== undefined) {
+    updateStats(data.checked_in_total, data.total);
+  }
+
+  // Add to recent list
+  addRecent(s, d.name || rawCode, new Date().toLocaleTimeString());
+}
+
+function showResult(type, icon, name, msg, code) {
+  const card = document.getElementById('resultCard');
+  card.className = `result-card ${type}`;
+  card.style.display = 'block';
+  document.getElementById('resultIcon').textContent = icon;
+  document.getElementById('resultName').textContent = name;
+  document.getElementById('resultMsg').textContent  = msg;
+  document.getElementById('resultCode').textContent = code;
+  // Auto-hide after 4s
+  clearTimeout(window._resultTimer);
+  window._resultTimer = setTimeout(() => { card.style.display = 'none'; }, 4000);
+}
+
+function updateStats(ci, total) {
+  document.getElementById('statCheckedIn').textContent = ci;
+  document.getElementById('statTotal').textContent     = total;
+  document.getElementById('statRemaining').textContent = total - ci;
+  document.getElementById('statPercent').textContent   = total ? Math.round(ci/total*100)+'%' : '0%';
+}
+
+function addRecent(status, name, time) {
+  const list = document.getElementById('recentList');
+  const dotClass = status === 'success' ? 'ok' : status === 'duplicate' ? 'dup' : 'bad';
+  const el = document.createElement('div');
+  el.className = 'scan-item';
+  el.innerHTML = `<div class="scan-dot ${dotClass}"></div>
+    <div class="scan-name">${name}</div>
+    <div class="scan-time">${time}</div>`;
+  list.insertBefore(el, list.firstChild);
+  if (list.children.length > 10) list.removeChild(list.lastChild);
+}
+
+// ── WebSocket for real-time sync ──────────────
+const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+const ws = new WebSocket(`${wsProto}://${location.host}/ws/checkin/${EVENT_PK}/`);
+ws.onmessage = e => {
+  const d = JSON.parse(e.data);
+  if (d.checked_in_total !== undefined) updateStats(d.checked_in_total, d.total);
+};
+
+// ── Poll stats every 10s as fallback ─────────
+setInterval(async () => {
+  try {
+    const r = await fetch(`/checkin/${EVENT_PK}/stats/`);
+    const d = await r.json();
+    updateStats(d.checked_in, d.total);
+  } catch(e) {}
+}, 10000);
+
+// ── Auto-start camera ─────────────────────────
+startCamera();
+</script>
+</body>
+</html>

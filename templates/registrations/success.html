@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Registration Confirmed – {{ registration.event.title }}{% endblock %}
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5" style="background: radial-gradient(ellipse at top, #1a1a2e 0%, #0f0f1a 70%);">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-6 col-md-8">
+        <div class="ep-glass-card p-5 text-center animate__animated animate__zoomIn">
+          <div class="success-icon-wrap mb-4">
+            <div class="success-ring"></div>
+            <i class="bi bi-check-lg success-check"></i>
+          </div>
+          <h2 class="text-white fw-800 mb-1">You're In!</h2>
+          <p class="text-muted mb-4">Registration confirmed for <strong class="text-white">{{ registration.event.title }}</strong></p>
+
+          <div class="reg-info-box mb-4">
+            <div class="reg-info-row">
+              <span class="text-muted">Name</span>
+              <span class="text-white fw-600">{{ registration.name }}</span>
+            </div>
+            <div class="reg-info-row">
+              <span class="text-muted">Email</span>
+              <span class="text-white fw-600">{{ registration.email }}</span>
+            </div>
+            <div class="reg-info-row">
+              <span class="text-muted">Registration Code</span>
+              <span class="text-white fw-700 font-mono">{{ registration.registration_code }}</span>
+            </div>
+            <div class="reg-info-row">
+              <span class="text-muted">Event Date</span>
+              <span class="text-white fw-600">{{ registration.event.start_date|date:"F d, Y" }}</span>
+            </div>
+            <div class="reg-info-row">
+              <span class="text-muted">Venue</span>
+              <span class="text-white fw-600">{{ registration.event.venue }}</span>
+            </div>
+          </div>
+
+          {% if registration.qr_code %}
+          <div class="qr-display mb-4">
+            <p class="text-muted small mb-2">Your entry QR code</p>
+            <div class="qr-wrapper">
+              <img src="{{ registration.qr_code.url }}" alt="QR Code" class="qr-img" />
+            </div>
+            <p class="text-muted small mt-2"><i class="bi bi-envelope-check me-1"></i>A copy has been sent to your email</p>
+          </div>
+          {% endif %}
+
+          <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <a href="{% url 'home' %}" class="btn btn-ep-outline">
+              <i class="bi bi-house me-2"></i>Back to Home
+            </a>
+            <a href="{% url 'events_list' %}" class="btn btn-ep-primary">
+              <i class="bi bi-calendar-event me-2"></i>More Events
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ event.title }} – WristbandsNG{% endblock %}
+{% block extra_css %}
+<style>:root { --event-color: {{ event.color_theme }}; }</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header-section" style="background: linear-gradient(135deg, {{ event.color_theme }}22, #0f0f1a);">
+  <div class="container py-5 mt-5">
+    <div class="row align-items-center">
+      <div class="col-lg-8">
+        <span class="event-type-badge position-static d-inline-block mb-3" style="background:{{ event.color_theme }}">{{ event.get_event_type_display }}</span>
+        <h1 class="text-white fw-800 mb-3">{{ event.title }}</h1>
+        <div class="d-flex flex-wrap gap-4 text-muted">
+          <span><i class="bi bi-calendar3 me-2" style="color:{{ event.color_theme }}"></i>{{ event.start_date|date:"F d, Y – g:i A" }}</span>
+          <span><i class="bi bi-geo-alt me-2" style="color:{{ event.color_theme }}"></i>{{ event.venue }}{% if event.city %}, {{ event.city }}{% endif %}</span>
+          {% if event.capacity > 0 %}
+          <span><i class="bi bi-people me-2" style="color:{{ event.color_theme }}"></i>{{ event.spots_left }} spots left</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-lg-4 mt-4 mt-lg-0 text-lg-end">
+        <a href="{% url 'register' event.slug %}" class="btn btn-ep-primary btn-lg px-5" style="background:{{ event.color_theme }};border-color:{{ event.color_theme }}">
+          Register Now <i class="bi bi-arrow-right ms-2"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container py-5">
+  <div class="row g-4">
+    <div class="col-lg-8">
+      {% if event.banner %}
+      <img src="{{ event.banner.url }}" alt="{{ event.title }}" class="w-100 rounded-3 mb-4" style="max-height:400px;object-fit:cover" />
+      {% endif %}
+      <div class="ep-glass-card p-4">
+        <h4 class="text-white fw-700 mb-3">About This Event</h4>
+        <p class="text-muted" style="line-height:1.8">{{ event.description }}</p>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="ep-glass-card p-4 mb-4">
+        <h6 class="text-white fw-700 mb-3">Event Details</h6>
+        <div class="d-flex flex-column gap-3">
+          <div class="d-flex gap-3 align-items-start">
+            <i class="bi bi-calendar3 mt-1" style="color:{{ event.color_theme }}"></i>
+            <div>
+              <div class="text-white small fw-600">Date & Time</div>
+              <div class="text-muted small">{{ event.start_date|date:"F d, Y" }}<br>{{ event.start_date|date:"g:i A" }} – {{ event.end_date|date:"g:i A" }}</div>
+            </div>
+          </div>
+          <div class="d-flex gap-3 align-items-start">
+            <i class="bi bi-geo-alt mt-1" style="color:{{ event.color_theme }}"></i>
+            <div>
+              <div class="text-white small fw-600">Venue</div>
+              <div class="text-muted small">{{ event.venue }}{% if event.address %}<br>{{ event.address }}{% endif %}{% if event.city %}<br>{{ event.city }}{% if event.country %}, {{ event.country }}{% endif %}{% endif %}</div>
+            </div>
+          </div>
+          {% if event.capacity > 0 %}
+          <div class="d-flex gap-3 align-items-start">
+            <i class="bi bi-people mt-1" style="color:{{ event.color_theme }}"></i>
+            <div>
+              <div class="text-white small fw-600">Capacity</div>
+              <div class="text-muted small">{{ event.registration_count }} / {{ event.capacity }} registered</div>
+              <div class="event-capacity-bar mt-2">
+                <div class="capacity-fill" style="width:{% widthratio event.registration_count event.capacity 100 %}%;background:{{ event.color_theme }}"></div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <a href="{% url 'register' event.slug %}" class="btn btn-ep-primary w-100 btn-lg" style="background:{{ event.color_theme }};border-color:{{ event.color_theme }}">
+        <i class="bi bi-check-circle me-2"></i>Register for This Event
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

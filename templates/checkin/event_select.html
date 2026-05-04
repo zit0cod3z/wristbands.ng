@@ -1,0 +1,251 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Check-in – Select Event{% endblock %}
+{% block page_title %}QR Check-in System{% endblock %}
+{% block nav_checkin %}active{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+  <p class="text-muted mb-0">Select an event to open its scanner or dashboard</p>
+  <div class="d-flex gap-2">
+    <a href="{% url 'checkin:overview' %}" class="btn btn-ep-ghost btn-sm">
+      <i class="bi bi-grid-1x2 me-1"></i>All Events Overview
+    </a>
+    <a href="{% url 'checkin:export_all' %}" class="btn btn-ep-ghost btn-sm">
+      <i class="bi bi-file-earmark-excel me-1"></i>Export All
+    </a>
+  </div>
+</div>
+
+<!-- Event cards -->
+<div class="row g-4">
+  {% for event in events %}
+  <div class="col-lg-4 col-md-6">
+    <div class="dash-card h-100 ci-event-card">
+      <div class="ci-accent-bar" style="background:linear-gradient(90deg,{{ event.color_theme }},#e6573f)"></div>
+      <div class="dash-card-body">
+
+        <!-- Event meta -->
+        <div class="d-flex align-items-start gap-3 mb-3">
+          <div class="ci-event-icon" style="background:{{ event.color_theme }}22;color:{{ event.color_theme }}">
+            {% if event.event_type == 'concert' %}<i class="bi bi-music-note-beamed"></i>
+            {% elif event.event_type == 'conference' %}<i class="bi bi-briefcase"></i>
+            {% elif event.event_type == 'meetup' %}<i class="bi bi-people"></i>
+            {% else %}<i class="bi bi-calendar-event"></i>{% endif %}
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <span class="type-chip mb-1 d-inline-block">{{ event.get_event_type_display }}</span>
+            <h6 class="text-white fw-700 mb-1 text-truncate">{{ event.title }}</h6>
+            <p class="text-muted small mb-0"><i class="bi bi-calendar3 me-1"></i>{{ event.start_date|date:"M d, Y" }}</p>
+            <p class="text-muted small mb-0"><i class="bi bi-geo-alt me-1"></i>{{ event.venue|truncatechars:28 }}</p>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="row g-2 mb-3">
+          <div class="col-4">
+            <div class="ci-mini-stat">
+              <div class="ci-mini-val text-white">{{ event.total_regs }}</div>
+              <div class="ci-mini-lbl">Registered</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="ci-mini-stat" style="border-color:rgba(172,35,118,.35)">
+              <div class="ci-mini-val" style="color:#ac2376">{{ event.total_checkins }}</div>
+              <div class="ci-mini-lbl">Checked In</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="ci-mini-stat" style="border-color:rgba(230,87,63,.25)">
+              <div class="ci-mini-val" style="color:#e6573f">{{ event.total_regs|add:"-"|add:event.total_checkins }}</div>
+              <div class="ci-mini-lbl">Remaining</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted" style="font-size:11px">Check-in Progress</span>
+            <span style="font-size:11px;color:#ac2376;font-weight:700">
+              {% if event.total_regs %}{% widthratio event.total_checkins event.total_regs 100 %}{% else %}0{% endif %}%
+            </span>
+          </div>
+          <div class="ci-progress-track">
+            <div class="ci-progress-fill"
+                 style="width:{% if event.total_regs %}{% widthratio event.total_checkins event.total_regs 100 %}{% else %}0{% endif %}%;
+                        background:linear-gradient(90deg,{{ event.color_theme }},#e6573f)">
+            </div>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="{% url 'checkin:pwa_scanner' event.pk %}" class="btn btn-ep-primary flex-grow-1 btn-sm">
+            <i class="bi bi-qr-code-scan me-1"></i>Open Scanner
+          </a>
+          <a href="{% url 'checkin:offline_reg_page' event.pk %}" class="btn btn-ep-ghost btn-sm" title="Offline Registration">
+            <i class="bi bi-person-plus"></i>
+          </a>
+          <!-- Share button – opens modal with URL + QR -->
+          <button class="btn btn-ep-ghost btn-sm"
+                  onclick="showShareModal('{{ event.title|escapejs }}','{% url "checkin:pwa_scanner" event.pk %}','{% url "checkin:scanner_url_qr" event.pk %}')"
+                  title="Share scanner link">
+            <i class="bi bi-share"></i>
+          </button>
+          <a href="{% url 'checkin:dashboard' event.pk %}" class="btn btn-ep-ghost btn-sm" title="Check-in dashboard">
+            <i class="bi bi-speedometer2"></i>
+          </a>
+          <a href="{% url 'checkin:export' event.pk %}" class="btn btn-ep-ghost btn-sm" title="Export Excel">
+            <i class="bi bi-download"></i>
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center py-5">
+    <i class="bi bi-calendar-x display-3 text-muted d-block mb-3"></i>
+    <p class="text-muted">No published events. Create and publish an event first.</p>
+    <a href="{% url 'dashboard:event_create' %}" class="btn btn-ep-primary mt-2">Create Event</a>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ── Share Scanner Modal ─────────────────────────────────────────── -->
+<div class="modal fade" id="shareModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content dash-modal">
+      <div class="modal-header">
+        <h6 class="modal-title text-white fw-700">
+          <i class="bi bi-share me-2" style="color:#ac2376"></i>
+          Share Scanner – <span id="shareEventName"></span>
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center">
+
+        <!-- Explanation -->
+        <div class="share-info-box mb-4">
+          <i class="bi bi-info-circle me-2" style="color:#ac2376"></i>
+          <span class="text-muted small">
+            Staff scan this QR code with any phone camera to open the scanner instantly.
+            Works on any device — no app install needed.
+          </span>
+        </div>
+
+        <!-- QR code of the scanner URL -->
+        <div class="share-qr-wrap mb-3">
+          <img id="shareQrImg" src="" alt="Scanner URL QR Code" class="share-qr-img"/>
+        </div>
+        <p class="text-muted small mb-1">Scan with any phone camera to open scanner</p>
+
+        <!-- Full URL display + copy -->
+        <div class="share-url-box mt-3">
+          <div class="share-url-label">Scanner URL</div>
+          <div class="share-url-row">
+            <span class="share-url-text" id="shareUrlText"></span>
+            <button class="share-copy-btn" onclick="copyShareUrl()" id="copyBtn">
+              <i class="bi bi-clipboard"></i> Copy
+            </button>
+          </div>
+        </div>
+
+        <!-- How to use -->
+        <div class="share-steps mt-4">
+          <div class="share-step">
+            <div class="step-num">1</div>
+            <div class="step-text">Staff member opens camera app on their phone or PDA</div>
+          </div>
+          <div class="share-step">
+            <div class="step-num">2</div>
+            <div class="step-text">Points camera at the QR code above — link opens automatically</div>
+          </div>
+          <div class="share-step">
+            <div class="step-num">3</div>
+            <div class="step-text">Scanner opens in browser — tap "Install" to add to home screen</div>
+          </div>
+          <div class="share-step">
+            <div class="step-num">4</div>
+            <div class="step-text">Scan guest QR codes — works online and offline</div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ep-ghost btn-sm" data-bs-dismiss="modal">Close</button>
+        <a id="shareOpenBtn" href="#" target="_blank" class="btn btn-ep-primary btn-sm">
+          <i class="bi bi-box-arrow-up-right me-1"></i>Open Scanner
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.ci-event-card { position:relative; overflow:hidden; }
+.ci-accent-bar { height:3px; width:100%; }
+.ci-event-icon { width:44px; height:44px; border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:20px; }
+.ci-mini-stat { background:rgba(255,255,255,.04); border:1px solid rgba(172,35,118,.12); border-radius:10px; padding:8px 6px; text-align:center; }
+.ci-mini-val { font-size:18px; font-weight:800; line-height:1; }
+.ci-mini-lbl { font-size:10px; color:#7a6872; text-transform:uppercase; letter-spacing:.4px; margin-top:2px; }
+.ci-progress-track { height:6px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; }
+.ci-progress-fill  { height:100%; border-radius:3px; transition:width .5s ease; min-width:2px; }
+
+/* Share modal */
+.share-info-box { background:rgba(172,35,118,.08); border:1px solid rgba(172,35,118,.2); border-radius:10px; padding:12px 14px; text-align:left; display:flex; align-items:flex-start; gap:8px; }
+.share-qr-wrap { display:inline-block; background:#fff; padding:14px; border-radius:16px; box-shadow:0 8px 32px rgba(172,35,118,.3); }
+.share-qr-img  { width:200px; height:200px; display:block; }
+.share-url-box { background:rgba(255,255,255,.04); border:1px solid rgba(172,35,118,.2); border-radius:10px; padding:12px 14px; text-align:left; }
+.share-url-label { font-size:10px; color:#7a6872; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.share-url-row { display:flex; align-items:center; gap:8px; }
+.share-url-text { font-size:12px; color:#e8e0e5; font-family:monospace; flex:1; word-break:break-all; }
+.share-copy-btn { background:linear-gradient(135deg,#ac2376,#e6573f); color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+
+.share-steps { text-align:left; display:flex; flex-direction:column; gap:8px; }
+.share-step { display:flex; align-items:flex-start; gap:10px; }
+.step-num { width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,#ac2376,#e6573f); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+.step-text { font-size:12px; color:#b09aa8; line-height:1.5; }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentShareUrl = '';
+
+function showShareModal(eventName, scannerPath, qrPath) {
+  // Build the full absolute URL
+  const fullUrl = window.location.origin + scannerPath;
+  currentShareUrl = fullUrl;
+
+  document.getElementById('shareEventName').textContent = eventName;
+  document.getElementById('shareUrlText').textContent   = fullUrl;
+  document.getElementById('shareQrImg').src             = qrPath;
+  document.getElementById('shareOpenBtn').href          = fullUrl;
+
+  new bootstrap.Modal(document.getElementById('shareModal')).show();
+}
+
+function copyShareUrl() {
+  navigator.clipboard.writeText(currentShareUrl).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.innerHTML = '<i class="bi bi-check-lg"></i> Copied!';
+    btn.style.background = '#10b981';
+    setTimeout(() => {
+      btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
+      btn.style.background = '';
+    }, 2000);
+  }).catch(() => {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = currentShareUrl;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+}
+</script>
+{% endblock %}
