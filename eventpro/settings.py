@@ -289,7 +289,7 @@ CSRF_COOKIE_SECURE    = _is_https
 
 CSRF_TRUSTED_ORIGINS = [
     o.strip() for o in
-    env('CSRF_TRUSTED_ORIGINS', 'http://localhost:8001,http://127.0.0.1:8001').split(',')
+    env('CSRF_TRUSTED_ORIGINS', 'https://wristbandsng.onrender.com').split(',')
     if o.strip()
 ]
 
@@ -326,7 +326,7 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 500
 # ---------------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS = [
     o.strip() for o in
-    env('CORS_ORIGINS', 'http://localhost:8000').split(',')
+    env('CORS_ORIGINS', 'https://wristbandsng.onrender.com').split(',')
     if o.strip()
 ]
 CORS_ALLOW_CREDENTIALS = True
