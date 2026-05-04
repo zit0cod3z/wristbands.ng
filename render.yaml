@@ -2,25 +2,29 @@ services:
   - type: web
     name: wristbandsng
     runtime: python
-    buildCommand: "./build.sh"
-    startCommand: "daphne -b 0.0.0.0 -p $PORT eventpro.asgi:application"
+    buildCommand: "cd eventpro && pip install --upgrade pip && pip install -r requirements.txt && mkdir -p staticfiles && PYTHONPATH=/opt/render/project/src/eventpro python manage.py collectstatic --no-input --clear && PYTHONPATH=/opt/render/project/src/eventpro python manage.py migrate"
+    startCommand: "cd eventpro && PYTHONPATH=/opt/render/project/src/eventpro daphne -b 0.0.0.0 -p $PORT eventpro.asgi:application"
     plan: free
 
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: "3.11.0"
       - key: DEBUG
         value: "False"
       - key: SECRET_KEY
-        generateValue: true        # Render auto-generates a secure key
+        generateValue: true
       - key: ALLOWED_HOSTS
         value: ".onrender.com,wristbands.ng,www.wristbands.ng"
       - key: CORS_ORIGINS
-        value: "https://wristbandsng.onrender.com"
+        value: "https://wristbands-ng.onrender.com"
+      - key: CSRF_TRUSTED_ORIGINS
+        value: "https://wristbands-ng.onrender.com,https://wristbands.ng,https://www.wristbands.ng"
       - key: DB_ENGINE
         value: "django.db.backends.sqlite3"
-      # Email — fill these in Render dashboard after deploy
+      # Uncomment and fill in Render dashboard after first deploy:
       # - key: EMAIL_HOST_USER
       #   value: your@gmail.com
       # - key: EMAIL_HOST_PASSWORD
       #   value: your_app_password
+      # - key: CLOUDINARY_URL
+      #   value: cloudinary://API_KEY:API_SECRET@CLOUD_NAME
