@@ -279,7 +279,7 @@ CSRF_COOKIE_SECURE    = _is_https
 
 CSRF_TRUSTED_ORIGINS = [
     o.strip() for o in
-    env('CSRF_TRUSTED_ORIGINS', 'http://localhost:8001,http://127.0.0.1:8001').split(',')
+    env('CSRF_TRUSTED_ORIGINS', 'https://wristbandsng.onrender.com').split(',')
     if o.strip()
 ]
 
@@ -292,7 +292,7 @@ if not DEBUG:
     SECURE_HSTS_SECONDS            = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD            = True
-    SECURE_SSL_REDIRECT            = True
+    SECURE_SSL_REDIRECT            = False
     SECURE_PROXY_SSL_HEADER        = ('HTTP_X_FORWARDED_PROTO', 'https')
     X_FRAME_OPTIONS                = 'DENY'
     SECURE_REFERRER_POLICY         = 'strict-origin-when-cross-origin'
