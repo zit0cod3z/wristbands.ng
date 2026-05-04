@@ -17,17 +17,21 @@ urlpatterns = [
     path('manifest.json', pwa_manifest, name='pwa_manifest'),
 ]
 
-# ── Media file serving ────────────────────────────────────────────────────
-# In development: Django serves media directly
-# In production on Render: Django also serves media (no Nginx)
-# In production on cPanel with Nginx: Nginx serves /media/ directly from disk
-# The re_path below ensures media always works regardless of DEBUG setting
 if settings.DEBUG:
+    # Development: Django serves both static and media directly
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 else:
-    # Serve media files even in production (needed for Render)
-    # On cPanel with Nginx, Nginx will intercept /media/ before Django sees it
+    # Production (Render / any host without Nginx in front of Django):
+    # Serve static files from STATIC_ROOT (populated by collectstatic)
+    # Serve media files from MEDIA_ROOT
+    # On cPanel with Nginx, Nginx intercepts these paths before Django sees them
     urlpatterns += [
+        re_path(
+            r'^static/(?P<path>.*)$',
+            serve,
+            {'document_root': settings.STATIC_ROOT, 'show_indexes': False},
+        ),
         re_path(
             r'^media/(?P<path>.*)$',
             serve,
