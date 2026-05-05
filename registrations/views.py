@@ -152,9 +152,30 @@ def _send_confirmation_email(registration):
         smtp_password = getattr(settings, 'EMAIL_HOST_PASSWORD', '')
         resend_key    = getattr(settings, 'RESEND_API_KEY', '')
 
-        if smtp_user and smtp_password:
-            # ── Gmail / SMTP (primary — works on Render with app password) ──
-            # Build MIME message with inline QR + attachment
+        # Resend API takes priority — it works on Render (HTTPS, not blocked).
+        # SMTP is only used locally or on cPanel/VPS where port 587 is open.
+        # Render free tier blocks all outbound SMTP — never use SMTP on Render.
+        if resend_key:
+            # ── Resend API (primary on Render) ────────────────────────────
+            import resend
+            resend.api_key = resend_key
+
+            params = {
+                'from': settings.DEFAULT_FROM_EMAIL,
+                'to': [registration.email],
+                'subject': subject,
+                'html': html_content,
+                'text': text_content,
+            }
+            if qr_bytes:
+                params['attachments'] = [{
+                    'filename': f'qr_{registration.registration_code}.png',
+                    'content': list(qr_bytes),
+                }]
+            resend.Emails.send(params)
+
+        elif smtp_user and smtp_password:
+            # ── SMTP (local dev / cPanel VPS only — blocked on Render) ────
             msg_mixed = MIMEMultipart('mixed')
             msg_mixed['Subject'] = subject
             msg_mixed['From']    = settings.DEFAULT_FROM_EMAIL
@@ -189,25 +210,6 @@ def _send_confirmation_email(registration):
                 server.ehlo()
                 server.login(smtp_user, smtp_password)
                 server.sendmail(smtp_user, [registration.email], msg_mixed.as_string())
-
-        elif resend_key:
-            # ── Resend API (fallback — use when domain is verified on resend.com) ──
-            import resend
-            resend.api_key = resend_key
-
-            params = {
-                'from': settings.DEFAULT_FROM_EMAIL,
-                'to': [registration.email],
-                'subject': subject,
-                'html': html_content,
-                'text': text_content,
-            }
-            if qr_bytes:
-                params['attachments'] = [{
-                    'filename': f'qr_{registration.registration_code}.png',
-                    'content': list(qr_bytes),
-                }]
-            resend.Emails.send(params)
 
         else:
             logger.warning(
