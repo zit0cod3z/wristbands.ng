@@ -6,6 +6,10 @@
 <meta name="theme-color" content="#ac2376"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="EP Register"/>
+<link rel="manifest" href="/manifest.json"/>
+<link rel="apple-touch-icon" href="/static/img/icon-192.png"/>
 <title>Register – {{ event.title }}</title>
 {% load static %}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
@@ -97,6 +101,9 @@ html,body{min-height:100%;font-family:'Inter',sans-serif;background:var(--bg);co
   <span class="status-text" id="statusText">Checking…</span>
   <span class="queue-pill" id="queuePill">0 pending</span>
 </div>
+
+<!-- PWA Install Banner — cross-platform (Android, iOS, PDA, iPad) -->
+<div id="pwaInstallMount"></div>
 
 <div class="content">
 
@@ -459,6 +466,23 @@ openDB().then(async () => {
 
 window.addEventListener('online',  () => { setStatus('online',  'Back online — syncing…'); syncNow(); });
 window.addEventListener('offline', () => { setStatus('offline', 'Offline — registrations saved locally'); });
+</script>
+
+{% load static %}
+<script src="{% static 'js/pwa-install.js' %}"></script>
+<script>
+  // Register service worker for offline support
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then(() => console.log('[WBNG] SW registered on offline-reg page'))
+      .catch(e => console.warn('[WBNG] SW failed:', e));
+  }
+
+  // Initialise cross-platform PWA install button
+  initPWAInstall({
+    appName: 'WristbandsNG Register',
+    iconUrl: '/static/img/icon-192.png',
+  });
 </script>
 </body>
 </html>
