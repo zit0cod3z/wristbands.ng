@@ -271,6 +271,12 @@ else:
 
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', 'EventPro <kizdakus@gmail.com>')
 
+# Resend API key — used on Render (SMTP port 587 is blocked on free tier).
+# Sign up free at resend.com → 3,000 emails/month free.
+# Set RESEND_API_KEY in Render environment variables.
+# When set, all confirmation emails go via Resend HTTPS API instead of SMTP.
+RESEND_API_KEY = env('RESEND_API_KEY', '')
+
 # ---------------------------------------------------------------------------
 # django-axes (brute-force protection)
 # ---------------------------------------------------------------------------
@@ -294,7 +300,7 @@ CSRF_COOKIE_SECURE    = _is_https
 
 CSRF_TRUSTED_ORIGINS = [
     o.strip() for o in
-    env('CSRF_TRUSTED_ORIGINS', 'https://wristbands-ng.onrender.com').split(',')
+    env('CSRF_TRUSTED_ORIGINS', 'http://localhost:8001,http://127.0.0.1:8001').split(',')
     if o.strip()
 ]
 
@@ -331,7 +337,7 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 500
 # ---------------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS = [
     o.strip() for o in
-    env('CORS_ORIGINS', 'https://wristbands-ng.onrender.com').split(',')
+    env('CORS_ORIGINS', 'http://localhost:8000').split(',')
     if o.strip()
 ]
 CORS_ALLOW_CREDENTIALS = True
