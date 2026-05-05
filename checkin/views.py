@@ -672,6 +672,7 @@ def pwa_manifest(request):
         "short_name": "WBNG Scanner",
         "description": "Scan QR codes to check in event guests — works offline",
         "start_url": "/checkin/",
+        "scope": "/",
         "display": "standalone",
         "background_color": "#0d0d12",
         "theme_color": "#ac2376",
@@ -681,13 +682,25 @@ def pwa_manifest(request):
                 "src": "/static/img/icon-192.png",
                 "sizes": "192x192",
                 "type": "image/png",
-                "purpose": "any maskable"
+                "purpose": "any"
+            },
+            {
+                "src": "/static/img/icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "maskable"
             },
             {
                 "src": "/static/img/icon-512.png",
                 "sizes": "512x512",
                 "type": "image/png",
-                "purpose": "any maskable"
+                "purpose": "any"
+            },
+            {
+                "src": "/static/img/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "maskable"
             }
         ],
         "categories": ["utilities", "productivity"],
@@ -696,8 +709,14 @@ def pwa_manifest(request):
                 "name": "Check-in Overview",
                 "url": "/checkin/overview/",
                 "description": "View all events check-in status"
+            },
+            {
+                "name": "Offline Register",
+                "url": "/checkin/",
+                "description": "Register guests offline"
             }
-        ]
+        ],
+        "prefer_related_applications": False,
     }
     return JsonResponse(manifest, content_type='application/manifest+json')
 
