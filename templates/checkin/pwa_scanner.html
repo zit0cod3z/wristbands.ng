@@ -83,12 +83,8 @@
   <!-- Scrollable body -->
   <div class="pwa-body">
 
-    <!-- Install banner (shown when PWA can be installed) -->
-    <div class="install-banner" id="installBanner">
-      <i class="bi bi-download" style="font-size:20px;color:#ac2376;flex-shrink:0"></i>
-      <p><strong>Install WristbandsNG Scanner</strong> on your device for faster access and full offline support.</p>
-      <button class="install-btn" onclick="installPWA()">Install</button>
-    </div>
+    <!-- PWA Install Banner — cross-platform (Android, iOS, PDA, iPad) -->
+    <div id="pwaInstallMount"></div>
 
     <!-- HTTPS warning banner – shown automatically on HTTP non-localhost -->
     <div id="httpWarningBanner" style="display:none;margin:10px 12px;background:rgba(245,158,11,.12);
@@ -234,6 +230,7 @@
 <!-- jsQR – pure JS, works offline once cached -->
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 {% load static %}
+<script src="{% static 'js/pwa-install.js' %}"></script>
 <script src="{% static 'js/scanner-pwa.js' %}"></script>
 <script>
   // Boot the scanner with server-side config
@@ -247,6 +244,12 @@
     stats_url:             '{% url "checkin:live_stats" event.pk %}',
     csrf_token:            '{{ csrf_token }}',
     preloaded_regs:        {{ preloaded_regs_json|safe }},
+  });
+
+  // Initialise cross-platform PWA install button
+  initPWAInstall({
+    appName: 'WristbandsNG Scanner',
+    iconUrl: '/static/img/icon-192.png',
   });
 
   // Show HTTPS warning if on HTTP non-localhost
