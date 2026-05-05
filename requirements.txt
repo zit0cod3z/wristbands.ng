@@ -12,3 +12,4 @@ whitenoise==6.8.2
 django-axes==7.0.1
 cloudinary
 django-cloudinary-storage
+resend==2.10.0
