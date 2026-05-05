@@ -859,9 +859,10 @@ def import_guest_list(request, event_pk):
 
                     _generate_qr(reg)
 
-                    # Only send email if real address
+                    # Only send email if real address — fire in background thread
                     if not email.endswith('@import.local'):
-                        _send_confirmation_email(reg)
+                        import threading
+                        threading.Thread(target=_send_confirmation_email, args=(reg,), daemon=True).start()
 
                     created += 1
 
@@ -990,7 +991,8 @@ def sync_offline_registrations(request, event_pk):
                     )
 
             _generate_qr(reg)
-            _send_confirmation_email(reg)
+            import threading
+            threading.Thread(target=_send_confirmation_email, args=(reg,), daemon=True).start()
 
             results.append({
                 'status': 'created',
@@ -1134,7 +1136,8 @@ def external_qr_import_process(request, event_pk):
 
     # Send confirmation email if requested and email is real
     if send_email_flag and not email.endswith('@import.wbng'):
-        _send_confirmation_email(reg)
+        import threading
+        threading.Thread(target=_send_confirmation_email, args=(reg,), daemon=True).start()
 
     return JsonResponse({
         'status': 'created',
@@ -1368,7 +1371,8 @@ def external_qr_bulk_import(request, event_pk):
 
                 # Send confirmation email (only if real email address)
                 if send_emails and not email.endswith('@import.wbng'):
-                    _send_confirmation_email(reg)
+                    import threading
+                    threading.Thread(target=_send_confirmation_email, args=(reg,), daemon=True).start()
 
                 results.append({
                     'row': row_num, 'status': 'created',
