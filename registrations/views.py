@@ -59,9 +59,18 @@ def register(request, slug):
             )
 
         _generate_qr(reg)
-        _send_confirmation_email(reg)
 
-        return redirect('registration_success', reg_id=reg.id)
+        # Send email in a background thread so the response returns immediately.
+        # This prevents CancelledError when Daphne/asgiref times out waiting for
+        # the synchronous view while email sending adds latency.
+        import threading
+        threading.Thread(
+            target=_send_confirmation_email,
+            args=(reg,),
+            daemon=True,
+        ).start()
+
+        return redirect('registration_success', reg.id)
 
     return render(request, 'registrations/register.html', {'event': event, 'fields': fields})
 
@@ -109,7 +118,7 @@ def _read_qr_bytes(registration):
 
 def _send_confirmation_email(registration):
     import logging
-    import base64
+    import smtplib
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
     from email.mime.image import MIMEImage
@@ -118,10 +127,10 @@ def _send_confirmation_email(registration):
     try:
         subject = f'Your Registration Confirmed – {registration.event.title}'
 
-        # Read QR image bytes once — works with local disk AND Cloudinary
+        # Read QR image bytes — works with local disk AND Cloudinary
         qr_bytes = _read_qr_bytes(registration)
 
-        # Render HTML — pass a flag so template uses cid: reference
+        # Render HTML email template
         html_content = render_to_string('emails/confirmation.html', {
             'registration': registration,
             'use_cid': True,
@@ -139,41 +148,14 @@ def _send_confirmation_email(registration):
             f'Venue: {registration.event.venue}\n'
         )
 
-        resend_api_key = getattr(settings, 'RESEND_API_KEY', '')
+        smtp_user     = getattr(settings, 'EMAIL_HOST_USER', '')
+        smtp_password = getattr(settings, 'EMAIL_HOST_PASSWORD', '')
+        resend_key    = getattr(settings, 'RESEND_API_KEY', '')
 
-        if resend_api_key:
-            # ── Resend API (HTTPS — works on Render free tier) ────────────
-            # Render blocks outbound SMTP (port 587/465). Resend uses HTTPS
-            # so it bypasses the firewall entirely.
-            import resend
-            resend.api_key = resend_api_key
-
-            attachments = []
-            if qr_bytes:
-                attachments.append({
-                    'filename': f'qr_{registration.registration_code}.png',
-                    'content': list(qr_bytes),  # Resend expects list of ints
-                })
-
-            params = {
-                'from': settings.DEFAULT_FROM_EMAIL,
-                'to': [registration.email],
-                'subject': subject,
-                'html': html_content,
-                'text': text_content,
-            }
-            if attachments:
-                params['attachments'] = attachments
-
-            resend.Emails.send(params)
-
-        else:
-            # ── SMTP fallback (works locally and on cPanel/VPS) ───────────
-            from email.mime.base import MIMEBase
-            from email import encoders
-            from django.core.mail import get_connection
-
-            msg_mixed   = MIMEMultipart('mixed')
+        if smtp_user and smtp_password:
+            # ── Gmail / SMTP (primary — works on Render with app password) ──
+            # Build MIME message with inline QR + attachment
+            msg_mixed = MIMEMultipart('mixed')
             msg_mixed['Subject'] = subject
             msg_mixed['From']    = settings.DEFAULT_FROM_EMAIL
             msg_mixed['To']      = registration.email
@@ -183,9 +165,8 @@ def _send_confirmation_email(registration):
 
             msg_alt = MIMEMultipart('alternative')
             msg_related.attach(msg_alt)
-
             msg_alt.attach(MIMEText(text_content, 'plain', 'utf-8'))
-            msg_alt.attach(MIMEText(html_content, 'html', 'utf-8'))
+            msg_alt.attach(MIMEText(html_content, 'html',  'utf-8'))
 
             if qr_bytes:
                 img_inline = MIMEImage(qr_bytes, _subtype='png')
@@ -199,20 +180,42 @@ def _send_confirmation_email(registration):
                                       filename=f'qr_{registration.registration_code}.png')
                 msg_mixed.attach(img_attach)
 
-            connection = get_connection(
-                host=settings.EMAIL_HOST,
-                port=settings.EMAIL_PORT,
-                username=settings.EMAIL_HOST_USER,
-                password=settings.EMAIL_HOST_PASSWORD,
-                use_tls=getattr(settings, 'EMAIL_USE_TLS', True),
+            host = getattr(settings, 'EMAIL_HOST', 'smtp.gmail.com')
+            port = int(getattr(settings, 'EMAIL_PORT', 587))
+
+            with smtplib.SMTP(host, port, timeout=20) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(smtp_user, smtp_password)
+                server.sendmail(smtp_user, [registration.email], msg_mixed.as_string())
+
+        elif resend_key:
+            # ── Resend API (fallback — use when domain is verified on resend.com) ──
+            import resend
+            resend.api_key = resend_key
+
+            params = {
+                'from': settings.DEFAULT_FROM_EMAIL,
+                'to': [registration.email],
+                'subject': subject,
+                'html': html_content,
+                'text': text_content,
+            }
+            if qr_bytes:
+                params['attachments'] = [{
+                    'filename': f'qr_{registration.registration_code}.png',
+                    'content': list(qr_bytes),
+                }]
+            resend.Emails.send(params)
+
+        else:
+            logger.warning(
+                f'No email credentials configured — skipping email for '
+                f'{registration.registration_code}. '
+                f'Set EMAIL_HOST_USER + EMAIL_HOST_PASSWORD (Gmail) or RESEND_API_KEY.'
             )
-            connection.open()
-            connection.connection.sendmail(
-                settings.EMAIL_HOST_USER,
-                [registration.email],
-                msg_mixed.as_string()
-            )
-            connection.close()
+            return
 
         registration.email_sent = True
         registration.save(update_fields=['email_sent'])
