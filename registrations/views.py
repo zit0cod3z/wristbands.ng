@@ -109,13 +109,10 @@ def _read_qr_bytes(registration):
 
 def _send_confirmation_email(registration):
     import logging
+    import base64
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
     from email.mime.image import MIMEImage
-    from email.mime.base import MIMEBase
-    from email import encoders
-    import smtplib
-    from django.core.mail import get_connection
 
     logger = logging.getLogger(__name__)
     try:
@@ -127,7 +124,7 @@ def _send_confirmation_email(registration):
         # Render HTML — pass a flag so template uses cid: reference
         html_content = render_to_string('emails/confirmation.html', {
             'registration': registration,
-            'use_cid': True,          # tells template to use cid:qrcode
+            'use_cid': True,
             'qr_available': bool(qr_bytes),
         })
 
@@ -142,57 +139,80 @@ def _send_confirmation_email(registration):
             f'Venue: {registration.event.venue}\n'
         )
 
-        # Build a proper MIME multipart/related message
-        # Structure:
-        #   multipart/mixed
-        #     multipart/related
-        #       multipart/alternative
-        #         text/plain
-        #         text/html  (references cid:qrcode)
-        #       image/png  (Content-ID: qrcode, inline)
-        #     image/png  (attachment copy)
+        resend_api_key = getattr(settings, 'RESEND_API_KEY', '')
 
-        msg_mixed = MIMEMultipart('mixed')
-        msg_mixed['Subject'] = subject
-        msg_mixed['From']    = settings.DEFAULT_FROM_EMAIL
-        msg_mixed['To']      = registration.email
+        if resend_api_key:
+            # ── Resend API (HTTPS — works on Render free tier) ────────────
+            # Render blocks outbound SMTP (port 587/465). Resend uses HTTPS
+            # so it bypasses the firewall entirely.
+            import resend
+            resend.api_key = resend_api_key
 
-        msg_related = MIMEMultipart('related')
-        msg_mixed.attach(msg_related)
+            attachments = []
+            if qr_bytes:
+                attachments.append({
+                    'filename': f'qr_{registration.registration_code}.png',
+                    'content': list(qr_bytes),  # Resend expects list of ints
+                })
 
-        msg_alt = MIMEMultipart('alternative')
-        msg_related.attach(msg_alt)
+            params = {
+                'from': settings.DEFAULT_FROM_EMAIL,
+                'to': [registration.email],
+                'subject': subject,
+                'html': html_content,
+                'text': text_content,
+            }
+            if attachments:
+                params['attachments'] = attachments
 
-        msg_alt.attach(MIMEText(text_content, 'plain', 'utf-8'))
-        msg_alt.attach(MIMEText(html_content, 'html', 'utf-8'))
+            resend.Emails.send(params)
 
-        # Attach QR as inline CID image (shows in email body)
-        if qr_bytes:
-            img_inline = MIMEImage(qr_bytes, _subtype='png')
-            img_inline.add_header('Content-ID', '<qrcode>')
-            img_inline.add_header('Content-Disposition', 'inline', filename=f'qr_{registration.registration_code}.png')
-            msg_related.attach(img_inline)
+        else:
+            # ── SMTP fallback (works locally and on cPanel/VPS) ───────────
+            from email.mime.base import MIMEBase
+            from email import encoders
+            from django.core.mail import get_connection
 
-            # Also attach as downloadable file
-            img_attach = MIMEImage(qr_bytes, _subtype='png')
-            img_attach.add_header('Content-Disposition', 'attachment', filename=f'qr_{registration.registration_code}.png')
-            msg_mixed.attach(img_attach)
+            msg_mixed   = MIMEMultipart('mixed')
+            msg_mixed['Subject'] = subject
+            msg_mixed['From']    = settings.DEFAULT_FROM_EMAIL
+            msg_mixed['To']      = registration.email
 
-        # Send via Django's configured connection
-        connection = get_connection(
-            host=settings.EMAIL_HOST,
-            port=settings.EMAIL_PORT,
-            username=settings.EMAIL_HOST_USER,
-            password=settings.EMAIL_HOST_PASSWORD,
-            use_tls=getattr(settings, 'EMAIL_USE_TLS', True),
-        )
-        connection.open()
-        connection.connection.sendmail(
-            settings.EMAIL_HOST_USER,
-            [registration.email],
-            msg_mixed.as_string()
-        )
-        connection.close()
+            msg_related = MIMEMultipart('related')
+            msg_mixed.attach(msg_related)
+
+            msg_alt = MIMEMultipart('alternative')
+            msg_related.attach(msg_alt)
+
+            msg_alt.attach(MIMEText(text_content, 'plain', 'utf-8'))
+            msg_alt.attach(MIMEText(html_content, 'html', 'utf-8'))
+
+            if qr_bytes:
+                img_inline = MIMEImage(qr_bytes, _subtype='png')
+                img_inline.add_header('Content-ID', '<qrcode>')
+                img_inline.add_header('Content-Disposition', 'inline',
+                                      filename=f'qr_{registration.registration_code}.png')
+                msg_related.attach(img_inline)
+
+                img_attach = MIMEImage(qr_bytes, _subtype='png')
+                img_attach.add_header('Content-Disposition', 'attachment',
+                                      filename=f'qr_{registration.registration_code}.png')
+                msg_mixed.attach(img_attach)
+
+            connection = get_connection(
+                host=settings.EMAIL_HOST,
+                port=settings.EMAIL_PORT,
+                username=settings.EMAIL_HOST_USER,
+                password=settings.EMAIL_HOST_PASSWORD,
+                use_tls=getattr(settings, 'EMAIL_USE_TLS', True),
+            )
+            connection.open()
+            connection.connection.sendmail(
+                settings.EMAIL_HOST_USER,
+                [registration.email],
+                msg_mixed.as_string()
+            )
+            connection.close()
 
         registration.email_sent = True
         registration.save(update_fields=['email_sent'])
