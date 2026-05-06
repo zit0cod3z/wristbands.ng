@@ -109,7 +109,6 @@ Staff Scans QR → Instant Check-in → Real-time Dashboard Updates
 - **Super Admin:** Full access to all events
 - **Admin:** Access only to assigned events
 - **Moderator:** View-only on assigned events
-- **God Mode:** Hardcoded system administrator — invisible to all other admins, cannot be deleted
 - Brute-force protection (5 failed attempts = 1 hour lockout)
 
 ### 12. Manual Guest Management
@@ -157,7 +156,6 @@ Staff Scans QR → Instant Check-in → Real-time Dashboard Updates
 - XSS protection headers
 - Clickjacking prevention (X-Frame-Options: DENY)
 - Rate limiting on registration and check-in endpoints
-- God Mode admin invisible to all other users
 
 ---
 
