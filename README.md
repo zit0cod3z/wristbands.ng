@@ -1,5 +1,7 @@
 # WristbandsNG – Event Management System
 
+Live demo @ www.wristbands-ng.onrender.com
+
 A full-featured, beautiful event management platform built with Django + MySQL.
 
 ## Features
